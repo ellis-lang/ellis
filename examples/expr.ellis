@@ -1,0 +1,6 @@
+
+let main () =
+    let x = 2;
+    let y = 33;
+    let z = x + y;
+end
