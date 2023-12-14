@@ -5,9 +5,15 @@
 #ifndef ELLIS_COMPILER_HPP
 #define ELLIS_COMPILER_HPP
 
+#include <vector>
+#include <string>
 
-class compiler {
-
+class Compiler {
+private:
+    bool verbose;
+public:
+    Compiler(const bool verbose) : verbose(verbose) {}
+    int compile(const std::vector<std::string>& files);
 };
 
 
