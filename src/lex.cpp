@@ -126,6 +126,20 @@ TokenPair lex_char_literal(std::string& source) {
     return tp;
 }
 
+TokenPair lex_number(std::string& source) {
+    std::string num;
+    auto tp = TokenPair();
+    for (auto c: source) {
+        if (isdigit(c) || c == '.')
+            num += c;
+        else break;
+    }
+    tp.first = tok_number;
+    tp.second = num;
+    source.erase(0, num.length());
+    return tp;
+}
+
 void lex_comment(std::string& source) {
     auto pos = source.find_first_of("\n");
     source.erase(0, pos);
@@ -143,8 +157,10 @@ std::vector<TokenPair> lex(std::string source, bool verbose=false) {
         auto ws = source.find_first_not_of(" \t\n\v\f\r");
         source.erase(0, ws);
 
-        if (isalnum(source[0])) {
+        if (isalpha(source[0])) {
             tokens.push_back(lex_alphanum(source));
+        } else if (isdigit(source[0])) {
+            tokens.push_back(lex_number(source));
         } else if (isoper(source[0])) {
             tokens.push_back(lex_operator(source));
         } else if (source[0] == '"') {

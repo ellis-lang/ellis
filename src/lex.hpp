@@ -19,6 +19,7 @@ enum Token {
     tok_else = 5,
     tok_end = 6,
     tok_then = 7,
+    tok_in = 8,
 
     tok_lparen = 20,
     tok_rparen = 21,
@@ -64,6 +65,7 @@ const std::map<std::string, Token> TOKEN_MAP = {
     {">", tok_greater_than},
     {"<", tok_less_than},
     {"then", tok_then},
+    {"in", tok_in}
 };
 
 const std::map<Token, std::string> TOKEN_STRINGS = {
@@ -89,7 +91,8 @@ const std::map<Token, std::string> TOKEN_STRINGS = {
     {tok_char_literal, "CHAR_LITERAL"},
     {tok_greater_than, "GREATER_THAN"},
     {tok_less_than, "LESS_THAN"},
-    {tok_then, "THEN"}
+    {tok_then, "THEN"},
+    {tok_in, "IN"}
 };
 
 const std::set operator_set = {
