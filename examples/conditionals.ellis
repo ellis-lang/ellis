@@ -1,0 +1,9 @@
+
+
+let main args =
+    if length args > 0 then
+        print "Hello, World\n";
+    else
+        print args;
+    end
+end
