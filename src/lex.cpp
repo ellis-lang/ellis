@@ -7,19 +7,6 @@
 #include <iostream>
 #include <set>
 
-const std::set operator_set = {
-    '+',
-    '-',
-    '/',
-    '*',
-    '%',
-    '^',
-    '&',
-    '!',
-    '=',
-    '|',
-};
-
 bool isoper(const char c) {
     return operator_set.count(c) > 0;
 }
@@ -56,9 +43,9 @@ TokenPair lex_alphanum(std::string& source) {
 }
 
 TokenPair lex_operator(std::string& source) {
-    std::string op = "";
+    std::string op;
     auto tp = TokenPair();
-    if (source.length() > 0) {
+    if (!source.empty()) {
         for (const auto c : source) {
             if (isoper(c)) {
                 op += c;
@@ -72,14 +59,16 @@ TokenPair lex_operator(std::string& source) {
 }
 
 TokenPair lex_string_literal(std::string& source) {
-    std::string str = "";
+    std::string str;
     auto tp = TokenPair();
     bool escaped = false;
     source.erase(0, 1); // remove initial double quote
-
+    bool finished = false;
     for (const auto c : source) {
-        if (c == '"' && !escaped)
+        if (c == '"' && !escaped) {
+            finished = true;
             break;
+        }
 
         if (c == '\\') {
             escaped = true;
@@ -89,6 +78,11 @@ TokenPair lex_string_literal(std::string& source) {
             str += c;
         }
     }
+
+    if (!finished) {
+        throw std::invalid_argument("String literal not terminated");
+    }
+
     source.erase(0, str.length() + 1);
     tp.second = str;
     tp.first = tok_string_literal;
@@ -96,11 +90,44 @@ TokenPair lex_string_literal(std::string& source) {
 }
 
 TokenPair lex_char_literal(std::string& source) {
+    std::string str;
+    auto tp = TokenPair();
+    bool escaped = false;
+    bool finished = false;
+    source.erase(0, 1); // remove initial single quote
+    int char_length = 0;
+    for (const auto c : source) {
+        if (c == '\'' && !escaped) {
+            finished = true;
+            break;
+        }
 
+        if (c == '\\') {
+            escaped = true;
+            str += c;
+        } else {
+            escaped = false;
+            str += c;
+            char_length++;
+        }
+    }
+
+    if (!finished) {
+        throw std::invalid_argument("String literal not terminated");
+    }
+
+    if (char_length > 1) {
+        throw std::invalid_argument("Multi-character literal found");
+    }
+
+    source.erase(0, str.length() + 1);
+    tp.second = str;
+    tp.first = tok_char_literal;
+    return tp;
 }
 
 void print_token(const TokenPair& tp) {
-    std::cout << "<Token: " << tp.first << ", " << tp.second << " >\n";
+    std::cout << "< " << TOKEN_STRINGS.at(tp.first) << ", " << tp.second << " >\n";
 }
 
 
