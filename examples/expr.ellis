@@ -3,4 +3,6 @@ let main () =
     let x = 2;
     let y = 33;
     let z = x + y;
+
+    return 5.34 * z;
 end

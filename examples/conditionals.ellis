@@ -6,4 +6,8 @@ let main args =
     else
         print args;
     end
+
+    for i in range 0 (length args)
+        #print args[i]
+    end
 end
