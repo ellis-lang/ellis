@@ -126,6 +126,11 @@ TokenPair lex_char_literal(std::string& source) {
     return tp;
 }
 
+void lex_comment(std::string& source) {
+    auto pos = source.find_first_of("\n");
+    source.erase(0, pos);
+}
+
 void print_token(const TokenPair& tp) {
     std::cout << "< " << TOKEN_STRINGS.at(tp.first) << ", " << tp.second << " >\n";
 }
@@ -152,7 +157,11 @@ std::vector<TokenPair> lex(std::string source, bool verbose=false) {
             TokenPair tp = {get_token_type(t), t};
             tokens.push_back(tp);
             source.erase(0, t.size());
-        } else {
+        } else if (source[0] == '#') {
+            lex_comment(source);
+        }
+
+        else {
             throw std::invalid_argument("Token not recognized: " + std::string(1, source[0]));
         }
     }
