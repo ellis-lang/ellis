@@ -7,14 +7,25 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "lex.hpp"
 
 
-class ExprAST {
+class AST {
+public:
+    virtual ~AST() = default;
+};
+
+class ExprAST : public AST{
 public:
     virtual ~ExprAST() = default;
+};
+
+class StatementAST : public AST {
+public:
+    virtual ~StatementAST() = default;
 };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
@@ -25,11 +36,30 @@ public:
     explicit NumberExprAST(const double Val) : Val(Val) {}
 };
 
+class StringExprAST : public ExprAST {
+    std::string val;
+public:
+    explicit StringExprAST(std::string Val) : val(std::move(Val)) {}
+};
+
+class CharExprAST : public ExprAST {
+    char val;
+public:
+    explicit CharExprAST(char Val) : val(Val) {}
+};
+
 class VariableExprAST : public ExprAST {
     std::string Name;
-
 public:
-    VariableExprAST(const std::string &Name) : Name(Name) {}
+    VariableExprAST(std::string Name) : Name(std::move(Name)) {}
+};
+
+class VariableDefAST : public StatementAST {
+    std::string name;
+    std::unique_ptr<ExprAST> value;
+public:
+    VariableDefAST(const std::string &Name, std::unique_ptr<ExprAST> v)
+                    : name(Name), value(std::move(v)) {}
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -62,23 +92,23 @@ class PrototypeAST {
     std::vector<std::string> Args;
 
 public:
-    PrototypeAST(const std::string &Name, std::vector<std::string> Args)
-        : Name(Name), Args(std::move(Args)) {}
+    PrototypeAST(std::string Name, std::vector<std::string> Args)
+        : Name(std::move(Name)), Args(std::move(Args)) {}
 
     const std::string &getName() const { return Name; }
 };
 
 /// FunctionAST - This class represents a function definition itself.
-class FunctionAST {
+class FunctionAST : public StatementAST {
     std::unique_ptr<PrototypeAST> Proto;
-    std::unique_ptr<ExprAST> Body;
+    std::vector<std::unique_ptr<AST>> body;
 
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                std::unique_ptr<ExprAST> Body)
-        : Proto(std::move(Proto)), Body(std::move(Body)) {}
+                std::vector<std::unique_ptr<AST>> Body)
+        : Proto(std::move(Proto)), body(std::move(Body)) {}
 };
 
-std::vector<ExprAST> parse(std::vector<TokenPair> tokens);
+std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair> tokens);
 
 #endif //AST_HPP
