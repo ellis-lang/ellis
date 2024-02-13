@@ -22,7 +22,7 @@ Token get_token_type(const std::string& s) {
     if (isdigit(s[0]))
         return tok_number;
 
-    throw std::invalid_argument("Token not recognized: " + s);
+    throw std::invalid_argument("Token not recognized, when trying to retrieve type: " + s);
 }
 
 
@@ -156,6 +156,7 @@ std::vector<TokenPair> lex(std::string source, bool verbose=false) {
         //  strip all whitespace
         auto ws = source.find_first_not_of(" \t\n\v\f\r");
         source.erase(0, ws);
+        source.erase(source.find_last_not_of(" \n\r\t")+1);
 
         if (isalpha(source[0])) {
             tokens.push_back(lex_alphanum(source));
@@ -178,7 +179,7 @@ std::vector<TokenPair> lex(std::string source, bool verbose=false) {
         }
 
         else {
-            throw std::invalid_argument("Token not recognized: " + std::string(1, source[0]));
+            throw std::invalid_argument("Token not recognized while lexing: " + std::string(1, source[0]));
         }
     }
 

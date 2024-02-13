@@ -6,6 +6,7 @@
 #include "source_handler.hpp"
 #include "lex.hpp"
 #include "parser.hpp"
+#include "ast.hpp"
 
 
 int Compiler::compile(const std::vector<std::string>& files) {
@@ -19,7 +20,14 @@ int Compiler::compile(const std::vector<std::string>& files) {
         }
         
         auto tokens = lex(file_string, verbose);
-        auto ast = parse(tokens, verbose);
+        auto ast = parse(tokens, false);
+        if (verbose) {
+            std::cout << "\nParsed AST: \n";
+            for (const auto& tree : ast) {
+                std::cout << *tree << "\n";
+            }
+        }
     }
+
     return 0;
 }
