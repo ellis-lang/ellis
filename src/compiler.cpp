@@ -5,6 +5,7 @@
 #include "compiler.hpp"
 #include "source_handler.hpp"
 #include "lex.hpp"
+#include "parser.hpp"
 
 
 int Compiler::compile(const std::vector<std::string>& files) {
@@ -16,8 +17,9 @@ int Compiler::compile(const std::vector<std::string>& files) {
             std::cout << file_string;
             std::cout << "\n";
         }
+        
         auto tokens = lex(file_string, verbose);
-
+        auto ast = parse(tokens, verbose);
     }
     return 0;
 }
