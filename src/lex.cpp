@@ -29,9 +29,9 @@ Token get_token_type(const std::string& s) {
 TokenPair lex_alphanum(std::string& source) {
     std::string alphanum = "";
     auto tp = TokenPair();
-    if (source.length() > 0) {
+    if (!source.empty()) {
         for (const auto c : source) {
-            if (isalnum(c)) {
+            if (isalnum(c) || c == '_') {
                 alphanum += c;
             } else break;
         }
