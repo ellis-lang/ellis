@@ -1,1 +1,13 @@
 let x = 1;
+
+let my_add x y =
+    add x y;
+    let z = add x y;
+    x = add z (subtract y z);
+
+    let inner_func b =
+        return b;
+    end
+end
+
+let y = f x;
