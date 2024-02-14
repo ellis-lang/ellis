@@ -105,6 +105,9 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, b
 
             return std::make_unique<CallExprAST>(std::move(ast));
         }
+        case tok_semicolon:
+            tokens.erase(tokens.begin());
+            return std::make_unique<VariableExprAST>(VariableExprAST(name));
         default:
             throw std::invalid_argument("Expected ')', found: " + tokens[0].second);
     }
@@ -241,7 +244,8 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
             case tok_identifier:
                 if (tokens[1].first == tok_equal) {
                     auto name = current_token.second;
-                    tokens.erase(tokens.begin() + 1);
+                    tokens.erase(tokens.begin(), tokens.begin() + 2);
+                    std::cout << "Next token after '=' : " << tokens[0].second << "\n";
                     auto node = std::make_unique<BinaryExprAST>("=",
                         std::make_unique<VariableExprAST>(VariableExprAST(name)),
                         parse_expression(tokens));
@@ -280,7 +284,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
                 if (tokens.size() > 1) {
                     if (tokens[1].first == tok_equal) {
                         auto name = current_token.second;
-                        tokens.erase(tokens.begin() + 1);
+                        tokens.erase(tokens.begin(), tokens.begin() + 2);
                         auto node = std::make_unique<BinaryExprAST>("=",
                             std::make_unique<VariableExprAST>(VariableExprAST(name)),
                             parse_expression(tokens, debug));
@@ -298,6 +302,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
             default:
                 throw std::invalid_argument("Unexpected token: " + current_token.second);
         }
+        std::cout << *ast.back() << "\n";
     }
     return ast;
 }
