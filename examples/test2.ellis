@@ -1,6 +1,8 @@
 let x = 1;
 
-x = z;
+x = "the";
+
+add "the" "cat" 'i';
 
 let my_add x y =
     add x y;

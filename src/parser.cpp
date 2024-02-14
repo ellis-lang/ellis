@@ -65,6 +65,18 @@ std::unique_ptr<ExprAST> parse_argument(std::vector<TokenPair>& tokens, bool deb
             }
             return std::make_unique<VariableExprAST>(VariableExprAST(name));
         }
+        case tok_string_literal: {
+            auto str = tokens[0].second;
+            tokens.erase(tokens.begin());
+            return std::make_unique<StringExprAST>(StringExprAST(str));
+        }
+
+        case tok_char_literal: {
+            auto ch = tokens[0].second[0];
+            tokens.erase(tokens.begin());
+            return std::make_unique<CharExprAST>(CharExprAST(ch));
+        }
+
         case tok_lparen:
             return parse_paren_expr(tokens);
         default:
@@ -84,6 +96,8 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, b
     // 4. binaryOp
     switch (tokens[0].first) {
         case tok_identifier:
+        case tok_char_literal:
+        case tok_string_literal:
         case tok_number:
         case tok_lparen: {
             std::vector<std::unique_ptr<ExprAST>> arguments;
@@ -116,10 +130,22 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, b
 std::unique_ptr<ExprAST> parse_number_expr(std::vector<TokenPair>& tokens, bool debug=false) {
     auto ast = std::make_unique<NumberExprAST>(NumberExprAST(std::stod(tokens[0].second)));
     tokens.erase(tokens.begin());
-    if (debug) {
-        ast->print(std::cout);
-        std::cout << "\n";
-    }
+    if (tokens[0].first == tok_semicolon)
+        tokens.erase(tokens.begin()); // erase ';'
+    return std::move(ast);
+}
+
+std::unique_ptr<ExprAST> parse_string_expr(std::vector<TokenPair>& tokens) {
+    auto ast = std::make_unique<StringExprAST>(StringExprAST(tokens[0].second));
+    tokens.erase(tokens.begin());
+    if (tokens[0].first == tok_semicolon)
+        tokens.erase(tokens.begin()); // erase ';'
+    return std::move(ast);
+}
+
+std::unique_ptr<ExprAST> parse_char_expr(std::vector<TokenPair>& tokens) {
+    auto ast = std::make_unique<CharExprAST>(CharExprAST(tokens[0].second[0]));
+    tokens.erase(tokens.begin());
     if (tokens[0].first == tok_semicolon)
         tokens.erase(tokens.begin()); // erase ';'
     return std::move(ast);
@@ -166,11 +192,17 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, bool debu
                 std::cout << "Found number, going to parse_number_expr\n";
             }
             return parse_number_expr(tokens);
+        case tok_char_literal:
+            return parse_char_expr(tokens);
+        case tok_string_literal:
+            return parse_string_expr(tokens);
         case tok_lparen:
             if (debug) {
                 std::cout << "Found lparen, going to parse_paren_expr\n";
             }
             return parse_paren_expr(tokens, debug);
+        default:
+            throw std::invalid_argument("Unexpected token when parsing primary expression: " + tokens[0].second);
     }
 }
 
@@ -255,6 +287,8 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
                 }
             break;
             case tok_number:
+            case tok_char_literal:
+            case tok_string_literal:
             case tok_lparen:
                 ast.push_back(parse_expression(tokens));
             break;
@@ -296,6 +330,8 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
 
                 break;
             case tok_number:
+            case tok_char_literal:
+            case tok_string_literal:
             case tok_lparen:
                 ast.push_back(parse_expression(tokens, debug));
                 break;
