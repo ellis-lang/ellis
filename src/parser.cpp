@@ -3,12 +3,16 @@
 //
 
 #include "parser.hpp"
+
+#include <cmath>
+
 #include "lex.hpp"
 #include <iostream>
 
 
 std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens, bool debug=false);
 std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, bool debug=false);
+std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
 
 
 const std::map<Token, int> infix_op = {
@@ -27,7 +31,8 @@ bool is_infix(const TokenPair& t) {
 }
 
 std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, bool debug=false) {
-    auto lhs = parse_primary(tokens, debug=debug);
+    auto lhs = parse_primary(tokens, debug);
+
 
     if (debug) {
         std::cout << "Inside parse_expression, got:\n";
@@ -112,6 +117,8 @@ std::unique_ptr<ExprAST> parse_number_expr(std::vector<TokenPair>& tokens, bool 
         ast->print(std::cout);
         std::cout << "\n";
     }
+    if (tokens[0].first == tok_semicolon)
+        tokens.erase(tokens.begin()); // erase ';'
     return std::move(ast);
 }
 
@@ -137,6 +144,7 @@ std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens, bool d
         throw std::invalid_argument("Expected ')', found: " + tokens[0].second);
 
     tokens.erase(tokens.begin());
+
     return expr;
 }
 
@@ -164,52 +172,6 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, bool debu
 }
 
 
-std::unique_ptr<ExprAST> parse_expr(std::vector<TokenPair>& tokens) {
-    /*
-     * This only takes a look at the first two tokens:
-     *
-     */
-    switch (tokens[0].first) {
-        case tok_semicolon:
-            return nullptr;
-            break;
-        case tok_number: {
-            auto current = std::make_unique<NumberExprAST>(NumberExprAST(std::stod(tokens[0].second)));
-            tokens.erase(tokens.begin());
-            if (tokens.size() > 1) {
-                if (is_infix(tokens[0])) {
-                    auto op = tokens[0].second;
-                    tokens.erase(tokens.begin());
-                    return std::make_unique<BinaryExprAST>(op, std::move(current), std::move(parse_expr(tokens)));
-                }
-            } else {
-                if (tokens[0].first != tok_semicolon)
-                    throw std::invalid_argument("Expected semicolon at end of statement, encountered EOF");
-                tokens.erase(tokens.begin());
-                return current;
-            }
-            break;
-        }
-        default:
-            throw std::invalid_argument("Unexpected token encountered while parsing expression: " + tokens[0].second);
-    }
-}
-
-
-
-
-
-
-std::unique_ptr<FunctionAST> parse_function_def(std::vector<TokenPair>& tokens, const std::string& ident) {
-
-}
-
-
-std::unique_ptr<VariableDefAST> parse_variable_def(std::vector<TokenPair>& tokens, const std::string& ident) {
-    return std::make_unique<VariableDefAST>(VariableDefAST(ident, parse_expr(tokens)));
-}
-
-
 std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
 
     // remove LET
@@ -224,20 +186,52 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
     }
 
     const auto ident = tokens[0].second;
+    // remove variable name
     tokens.erase(tokens.begin());
 
     switch (tokens[0].first) {
-        case tok_equal:
-            return parse_variable_def(tokens, ident);
-        case tok_identifier:
-            return parse_function_def(tokens, ident);
-        case tok_lparen:
-            return parse_function_def(tokens, ident);
+        case tok_equal: {
+            tokens.erase(tokens.begin());
+            auto expr = parse_expression(tokens);
+            return std::make_unique<VariableDefAST>(ident, std::move(expr));
+        }
+        case tok_identifier: {
+            auto arg_names = std::vector<std::string>();
+            while (tokens[0].first == tok_identifier) {
+                arg_names.push_back(tokens[0].second);
+                if (tokens.empty())
+                    throw std::invalid_argument("Expected '=' before function body");
+                tokens.erase(tokens.begin());
+            }
+
+            if (tokens[0].first == tok_equal) {
+                auto ast = PrototypeAST(ident, arg_names);
+                tokens.erase(tokens.begin());
+                return std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
+            }
+            throw std::invalid_argument("Expected '=' before function body");
+        }
+        case tok_lparen: {
+            tokens.erase(tokens.begin());
+            if (tokens[0].first != tok_rparen) {
+                throw std::invalid_argument("Expected closing ')' in unit function");
+            }
+            auto ast = PrototypeAST(ident, std::vector<std::string>());
+            tokens.erase(tokens.begin());
+            if (tokens[0].first != tok_equal)
+                throw std::invalid_argument("Expected '=' before function body");
+
+            tokens.erase(tokens.begin());
+            return std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
+        }
         default:
             throw std::invalid_argument("Expected identifier, '=' or '(' in let statement, recieved: " + tokens[0].second);
-
     }
+}
 
+std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
+    std::vector<std::unique_ptr<AST>> ast;
+    return ast;
 }
 
 
@@ -249,6 +243,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
         switch (current_token.first) {
             case tok_let:
                 ast.push_back(parse_let(tokens));
+                break;
             case tok_identifier:
                 // 1. function call
                 // 2. redefinition of variable
@@ -257,6 +252,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
                         ast.push_back(parse_expression(tokens, debug));
                     }
                 }
+                break;
             case tok_number:
                 ast.push_back(parse_expression(tokens, debug));
                 break;
@@ -270,7 +266,3 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
     return ast;
 }
 
-
-FunctionAST parse_function_def(std::vector<TokenPair>& tokens) {
-
-}

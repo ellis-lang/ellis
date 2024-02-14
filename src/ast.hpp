@@ -53,7 +53,7 @@ class StringExprAST : public ExprAST {
 public:
     explicit StringExprAST(std::string Val) : val(std::move(Val)) {}
     void print (std::ostream& stream) const override {
-        stream << "String(" << val << ")" << " \n";
+        stream << "String(" << val << ")";
     }
 };
 
@@ -62,7 +62,7 @@ class CharExprAST : public ExprAST {
 public:
     explicit CharExprAST(char Val) : val(Val) {}
     void print (std::ostream& stream) const override {
-        stream << "Char(" << val << ")" << " \n";
+        stream << "Char(" << val << ")";
     }
 };
 
@@ -72,7 +72,7 @@ public:
     explicit VariableExprAST(std::string Name) : Name(std::move(Name)) {}
 
     void print (std::ostream& stream) const override {
-        stream << "Variable(" << Name << ")" << " \n";
+        stream << "Variable(" << Name << ")";
     }
 };
 
@@ -86,6 +86,7 @@ public:
     void print (std::ostream& stream) const override {
         stream << "VariableDef(" << name << " = ";
         value->print(stream);
+        stream << ")";
     }
 };
 
