@@ -304,7 +304,6 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
 
 
 std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool debug=true) {
-    std::cout << "[DEBUG]: "<< debug << "\n";
     std::vector<std::unique_ptr<AST>> ast;
     while (!tokens.empty()) {
         auto current_token = tokens[0];
