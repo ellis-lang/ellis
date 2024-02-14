@@ -2,4 +2,7 @@ subtract 2 4;
 
 add 1 2 3 (sub 1 2);
 
-add subtract 9 (mult 2 3)
+add subtract 9 (mult 2 3);
+
+# this assumes subtract is a function
+add (subtract 9 (mult 2 3));
