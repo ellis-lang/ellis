@@ -2,10 +2,10 @@
 #include "include/argparse.hpp"
 #include "src/compiler.hpp"
 
-const std::string banner = " ____  __    __    __  ____ "
-                           "(  __)(  )  (  )  (  )/ ___)"
-                           " ) _) / (_/\\/ (_/\\ )( \\___ \\"
-                           "(____)\\____/\\____/(__)(____/";
+const std::string banner = " ____  __    __    __  ____ \n"
+                           "(  __)(  )  (  )  (  )/ ___)\n"
+                           " ) _) / (_/\\/ (_/\\ )( \\___ \\\n"
+                           "(____)\\____/\\____/(__)(____/\n";
 
 int handle_source_files(const std::vector<std::string>& files, const bool verbose) {
     auto c = Compiler(verbose);
@@ -16,8 +16,8 @@ int handle_source_files(const std::vector<std::string>& files, const bool verbos
 
 int run_interpreter() {
     std::string expr;
-    std::cout << banner << "\n";
-    std::cout << "version 0.0.1\n";
+    std::cout << banner;
+    std::cout << "Version 0.0.1\n";
     std::cout << "ellis>";
     return 0;
 }
@@ -27,11 +27,12 @@ int main(int argc, char* argv[]) {
 
     program.add_argument("source_files")
             .remaining()
+            .default_value(std::vector<std::string>())
             .help("The list of input source files to be compiled");
 
     program.add_argument("--verbose")
-            .default_value(false)
-            .implicit_value(true);
+            .help("Increase output verbosity.")
+            .flag();
 
     program.add_argument("--interpreter")
         .default_value(false)
@@ -47,18 +48,9 @@ int main(int argc, char* argv[]) {
     }
 
     const auto files = program.get<std::vector<std::string>>("source_files");
-    if (program["verbose"] == true)
-        std::cout << files.size() << " source files provided" << std::endl;
 
-    if (program["interpreter"] == true) {
+    if (files.empty())
         return run_interpreter();
-    }
 
-    if (files.empty()) {
-        std::cerr << "No input files provided.";
-        return 1;
-    }
-
-    handle_source_files(files, program["verbose"] == true);
-    return 0;
+    return handle_source_files(files, program["verbose"] == true);
 }
