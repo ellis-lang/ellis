@@ -145,9 +145,10 @@ public:
     const std::string &getName() const { return Name; }
 
     void print(std::ostream& stream) const {
-        stream << Name << " ";
+        stream << Name << "( ";
         for (const auto& arg: Args)
-            stream << arg;
+            stream << arg << " ";
+        stream << ")";
     }
 };
 
@@ -164,6 +165,12 @@ public:
     void print(std::ostream& stream) const override {
         stream << "Function ";
         Proto->print(stream);
+        stream << "\n";
+        for (const auto &n : body) {
+            stream << "\t";
+            n->print(stream);
+            stream << "\n";
+        }
     }
 };
 

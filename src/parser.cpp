@@ -230,12 +230,42 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
 }
 
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
+    std::cout << "parsing body\n";
     std::vector<std::unique_ptr<AST>> ast;
+    while (tokens[0].first != tok_end) {
+        auto current_token = tokens[0];
+        switch (current_token.first) {
+            case tok_let:
+                ast.push_back(parse_let(tokens));
+            break;
+            case tok_identifier:
+                if (tokens[1].first == tok_equal) {
+                    auto name = current_token.second;
+                    tokens.erase(tokens.begin() + 1);
+                    auto node = std::make_unique<BinaryExprAST>("=",
+                        std::make_unique<VariableExprAST>(VariableExprAST(name)),
+                        parse_expression(tokens));
+                    ast.push_back(std::move(node));
+                } else {
+                    ast.push_back(parse_expression(tokens));
+                }
+            break;
+            case tok_number:
+            case tok_lparen:
+                ast.push_back(parse_expression(tokens));
+            break;
+            default:
+                throw std::invalid_argument("Unexpected token when parsing function body: " + current_token.second);
+        }
+        if (tokens.empty())
+            throw std::invalid_argument("Expected 'end' at end of function definition, got EOF");
+    }
+    tokens.erase(tokens.begin()); // remove 'end'
     return ast;
 }
 
 
-std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool debug=false) {
+std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool debug=true) {
     std::cout << "[DEBUG]: "<< debug << "\n";
     std::vector<std::unique_ptr<AST>> ast;
     while (!tokens.empty()) {
@@ -249,13 +279,19 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool deb
                 // 2. redefinition of variable
                 if (tokens.size() > 1) {
                     if (tokens[1].first == tok_equal) {
+                        auto name = current_token.second;
+                        tokens.erase(tokens.begin() + 1);
+                        auto node = std::make_unique<BinaryExprAST>("=",
+                            std::make_unique<VariableExprAST>(VariableExprAST(name)),
+                            parse_expression(tokens, debug));
+                        ast.push_back(std::move(node));
+                    } else {
                         ast.push_back(parse_expression(tokens, debug));
                     }
                 }
+
                 break;
             case tok_number:
-                ast.push_back(parse_expression(tokens, debug));
-                break;
             case tok_lparen:
                 ast.push_back(parse_expression(tokens, debug));
                 break;
