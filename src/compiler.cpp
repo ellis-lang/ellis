@@ -20,7 +20,7 @@ int Compiler::compile(const std::vector<std::string>& files) {
         }
         
         auto tokens = lex(file_string, verbose);
-        auto ast = parse(tokens, false);
+        auto ast = parse(tokens);
     }
 
     return 0;

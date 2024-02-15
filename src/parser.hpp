@@ -8,6 +8,6 @@
 #include "ast.hpp"
 #include "lex.hpp"
 
-std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens, bool verbose);
+std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens);
 
 #endif //PARSER_HPP

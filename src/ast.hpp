@@ -174,6 +174,35 @@ public:
     }
 };
 
+class IfAST : public StatementAST {
+    std::unique_ptr<ExprAST> condition;
+    std::vector<std::unique_ptr<AST>> body_on_true;
+    std::vector<std::unique_ptr<AST>> body_on_false;
+
+public:
+    IfAST(std::unique_ptr<ExprAST> cond,
+          std::vector<std::unique_ptr<AST>> BodyOnTrue,
+          std::vector<std::unique_ptr<AST>> BodyOnFalse)
+        : condition(std::move(cond)), body_on_true(std::move(BodyOnTrue)), body_on_false(std::move(BodyOnFalse)) {}
+
+    void print(std::ostream& stream) const override {
+        stream << "If(  ";
+        condition->print(stream);
+        stream << ") then \n";
+        for (const auto &n : body_on_true) {
+            stream << "\t";
+            n->print(stream);
+            stream << "\n";
+        }
+        stream << " else \n";
+        for (const auto &n : body_on_false) {
+            stream << "\t";
+            n->print(stream);
+            stream << "\n";
+        }
+    }
+};
+
 inline std::ostream& operator<<(std::ostream& os, const AST& a ) {
     a.print(os);
     return os;
