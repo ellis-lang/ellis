@@ -1,13 +1,13 @@
 
+if true then
+    f x;
+end
 
 let main args =
-    if length args > 0 then
+    if length gt (len args) 0 then
         print "Hello, World\n";
     else
         print args;
     end
 
-    for i in range 0 (length args)
-        #print args[i]
-    end
 end
