@@ -7,11 +7,18 @@
 #include <iostream>
 #include <cmath>
 
-
 std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens);
 std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token terminator);
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
 
+class ParsingException : public std::exception {
+    const char* message;
+public:
+    explicit ParsingException(const std::string& msg) : message(msg.c_str()) {}
+    const char* what () {
+        return message;
+    }
+};
 
 const std::map<Token, int> infix_op = {
     {tok_aster, 10},
@@ -31,7 +38,7 @@ bool is_infix(const TokenPair& t) {
 std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
     auto lhs = parse_primary(tokens, terminator);
     if (tokens[0].first != terminator) {
-        throw std::invalid_argument("Expected terminator at the end of expression, got: " + tokens[0].second );
+        throw ParsingException("Expected terminator at the end of expression, got: " + tokens[0].second );
     }
     tokens.erase(tokens.begin());
 
@@ -66,7 +73,7 @@ std::unique_ptr<ExprAST> parse_argument(std::vector<TokenPair>& tokens) {
         case tok_lparen:
             return parse_paren_expr(tokens);
         default:
-            throw std::invalid_argument("Unexpected token while parsing function argument: " + tokens[0].second);
+            throw ParsingException("Unexpected token while parsing function argument: " + tokens[0].second);
     }
 }
 
@@ -98,7 +105,7 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, c
             if (tokens[0].first == terminator) {
                 return std::make_unique<VariableExprAST>(VariableExprAST(name));
             }
-            throw std::invalid_argument("Expected ')', found: " + tokens[0].second);
+            throw ParsingException("Expected ')', found: " + tokens[0].second);
     }
 }
 
@@ -144,7 +151,7 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, const Tok
         case tok_lparen:
             return parse_paren_expr(tokens);
         default:
-            throw std::invalid_argument("Unexpected token when parsing primary expression: " + tokens[0].second);
+            throw ParsingException("Unexpected token when parsing primary expression: " + tokens[0].second);
     }
 }
 
@@ -154,11 +161,11 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
     // remove LET
     tokens.erase(tokens.begin());
     if (tokens.empty()) {
-        throw std::invalid_argument("Expected identifier after let statement");
+        throw ParsingException("Expected identifier after let statement");
     }
 
     if (tokens[0].first != tok_identifier) {
-        throw std::invalid_argument("Expected identifier after let, got " + tokens[0].second);
+        throw ParsingException("Expected identifier after let, got " + tokens[0].second);
     }
 
     const auto ident = tokens[0].second;
@@ -176,7 +183,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             while (tokens[0].first == tok_identifier) {
                 arg_names.push_back(tokens[0].second);
                 if (tokens.empty())
-                    throw std::invalid_argument("Expected '=' before function body");
+                    throw ParsingException("Expected '=' before function body");
                 tokens.erase(tokens.begin());
             }
 
@@ -187,17 +194,17 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
                 tokens.erase(tokens.begin()); // remove 'end'
                 return std::move(func);
             }
-            throw std::invalid_argument("Expected '=' before function body");
+            throw ParsingException("Expected '=' before function body");
         }
         case tok_lparen: {
             tokens.erase(tokens.begin());
             if (tokens[0].first != tok_rparen) {
-                throw std::invalid_argument("Expected closing ')' in unit function");
+                throw ParsingException("Expected closing ')' in unit function");
             }
             auto ast = PrototypeAST(ident, std::vector<std::string>());
             tokens.erase(tokens.begin());
             if (tokens[0].first != tok_equal)
-                throw std::invalid_argument("Expected '=' before function body");
+                throw ParsingException("Expected '=' before function body");
 
             tokens.erase(tokens.begin());
             auto func = std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
@@ -205,7 +212,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             return std::move(func);
         }
         default:
-            throw std::invalid_argument("Expected identifier, '=' or '(' in let statement, recieved: " + tokens[0].second);
+            throw ParsingException("Expected identifier, '=' or '(' in let statement, recieved: " + tokens[0].second);
     }
 }
 
@@ -225,7 +232,7 @@ std::unique_ptr<IfAST> parse_if(std::vector<TokenPair>& tokens) {
         return std::make_unique<IfAST>(IfAST(std::move(conditional), std::move(body_true), std::move(body_false)));
     }
 
-    throw std::invalid_argument("Unexpected token while parsing if statement: " + tokens[0].second);
+    throw ParsingException("Unexpected token while parsing if statement: " + tokens[0].second);
 }
 
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
@@ -263,11 +270,11 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
                 ast.push_back(parse_if(tokens));
                 break;
             default:
-                throw std::invalid_argument("Unexpected token: " + current_token.second);
+                throw ParsingException("Unexpected token: " + current_token.second);
 
         }
         if (tokens.empty())
-            throw std::invalid_argument("Expected 'end' at end of function definition, got EOF");
+            throw ParsingException("Expected 'end' at end of function definition, got EOF");
     }
     return ast;
 }
@@ -309,7 +316,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
                 ast.push_back(parse_if(tokens));
                 break;
             default:
-                throw std::invalid_argument("Unexpected token: " + current_token.second);
+                throw ParsingException("Unexpected token: " + current_token.second);
         }
         std::cout << *ast.back() << "\n";
     }
