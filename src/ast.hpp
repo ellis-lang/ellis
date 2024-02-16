@@ -10,19 +10,12 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "llvm-18/llvm/ADT/APFloat.h"
-#include "llvm-18/llvm/ADT/STLExtras.h"
-#include "llvm-18/llvm/IR/BasicBlock.h"
-#include "llvm-18/llvm/IR/Constants.h"
-#include "llvm-18/llvm/IR/DerivedTypes.h"
-#include "llvm-18/llvm/IR/Function.h"
-#include "llvm-18/llvm/IR/IRBuilder.h"
-#include "llvm-18/llvm/IR/LLVMContext.h"
-#include "llvm-18/llvm/IR/Module.h"
-#include "llvm-18/llvm/IR/Type.h"
-#include "llvm-18/llvm/IR/Verifier.h"
 
+#include "llvm/IR/BasicBlock.h"
 
+using namespace llvm;
+
+class Visitor;
 
 class AST {
 public:
@@ -30,6 +23,7 @@ public:
     virtual void print(std::ostream& stream) const {
         stream << "AST";
     }
+    virtual void Accept(Visitor& v) = 0;
 };
 
 class ExprAST : public AST{
@@ -38,6 +32,7 @@ public:
     void print(std::ostream& stream) const override {
         stream << "ExprAST";
     }
+    virtual void Accept(Visitor& v) = 0;
 };
 
 class StatementAST : public AST {
@@ -46,51 +41,70 @@ public:
     void print(std::ostream& stream) const override {
         stream << "StatementAST";
     }
+    virtual void Accept(Visitor& v) = 0;
 };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
 class NumberExprAST : public ExprAST {
-    double Val;
-
+    double val;
+    Value* code;
 public:
-    explicit NumberExprAST(const double Val) : Val(Val) {}
+    explicit NumberExprAST(const double Val) : val(Val) {}
 
     void print(std::ostream& stream) const override {
-        stream << "Number(" << Val << ")";
+        stream << "Number(" << val << ")";
     }
+
+    void Accept(Visitor& v) override;
+    double getVal() { return val; }
+    void setCode(Value* c) { code = c; }
+
 };
 
 class StringExprAST : public ExprAST {
     std::string val;
+    Value* code;
 public:
     explicit StringExprAST(std::string Val) : val(std::move(Val)) {}
     void print (std::ostream& stream) const override {
         stream << "String(" << val << ")";
     }
+    void Accept(Visitor& v) override;
+    std::string getVal() { return val; }
+    void setCode(Value* c) { code = c; }
 };
 
 class CharExprAST : public ExprAST {
     char val;
+    Value* code;
 public:
     explicit CharExprAST(char Val) : val(Val) {}
     void print (std::ostream& stream) const override {
         stream << "Char(" << val << ")";
     }
+    void Accept(Visitor& v) override;
+    char getVal() { return val; }
+    void setCode(Value* c) { code = c; }
 };
 
 class VariableExprAST : public ExprAST {
-    std::string Name;
+    std::string name;
+    Value* code;
 public:
-    explicit VariableExprAST(std::string Name) : Name(std::move(Name)) {}
+    explicit VariableExprAST(std::string Name) : name(std::move(Name)) {}
 
     void print (std::ostream& stream) const override {
-        stream << "Variable(" << Name << ")";
+        stream << "Variable(" << name << ")";
     }
+    void Accept(Visitor& v) override;
+    std::string getName() { return name; }
+    void setCode(Value* c) { code = c; }
 };
 
 class VariableDefAST : public StatementAST {
     std::string name;
     std::unique_ptr<ExprAST> value;
+    Value* code;
 public:
     VariableDefAST(std::string Name, std::unique_ptr<ExprAST> v)
                     : name(std::move(Name)), value(std::move(v)) {}
@@ -100,13 +114,16 @@ public:
         value->print(stream);
         stream << ")";
     }
+    void Accept(Visitor& v) override;
+    std::string getName() { return name; }
+    void setCode(Value* c) { code = c; }
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
 class BinaryExprAST : public ExprAST {
     std::string Op;
     std::unique_ptr<ExprAST> LHS, RHS;
-
+    Value* code;
 public:
     BinaryExprAST(std::string Op, std::unique_ptr<ExprAST> LHS,
                   std::unique_ptr<ExprAST> RHS)
@@ -120,13 +137,15 @@ public:
         RHS->print(stream);
         stream << ")";
     }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
 };
 
 /// CallExprAST - Expression class for function calls.
 class CallExprAST : public ExprAST {
     std::string Callee;
     std::vector<std::unique_ptr<ExprAST>> Args;
-
+    Value* code;
 public:
     CallExprAST(std::string Callee,
                 std::vector<std::unique_ptr<ExprAST>> Args)
@@ -141,6 +160,8 @@ public:
         }
         stream << ")";
     }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -162,13 +183,14 @@ public:
             stream << arg << " ";
         stream << ")";
     }
+    void Accept(Visitor& v);
 };
 
 /// FunctionAST - This class represents a function definition itself.
 class FunctionAST : public StatementAST {
     std::unique_ptr<PrototypeAST> Proto;
     std::vector<std::unique_ptr<AST>> body;
-
+    Value* code;
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                 std::vector<std::unique_ptr<AST>> Body)
@@ -184,13 +206,15 @@ public:
             stream << "\n";
         }
     }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
 };
 
 class IfAST : public StatementAST {
     std::unique_ptr<ExprAST> condition;
     std::vector<std::unique_ptr<AST>> body_on_true;
     std::vector<std::unique_ptr<AST>> body_on_false;
-
+    Value* code;
 public:
     IfAST(std::unique_ptr<ExprAST> cond,
           std::vector<std::unique_ptr<AST>> BodyOnTrue,
@@ -213,12 +237,34 @@ public:
             stream << "\n";
         }
     }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const AST& a ) {
     a.print(os);
     return os;
 }
+
+inline std::unique_ptr<ExprAST> LogError(const char *Str) {
+    fprintf(stderr, "Error: %s\n", Str);
+    return nullptr;
+}
+
+class Visitor {
+public:
+    // These are for dispatching on visitor's type.
+    virtual void Visit(VariableExprAST& ast) = 0;
+    virtual void Visit(NumberExprAST& ast) = 0;
+    virtual void Visit(StringExprAST& ast) = 0;
+    virtual void Visit(CharExprAST& ast) = 0;
+    virtual void Visit(IfAST& ast) = 0;
+    virtual void Visit(BinaryExprAST& ast) = 0;
+    virtual void Visit(FunctionAST& ast) = 0;
+    virtual void Visit(CallExprAST& ast) = 0;
+    virtual void Visit(VariableDefAST& ast) = 0;
+
+};
 
 
 

@@ -19,7 +19,9 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         ast.cpp
         ast.hpp
         parser.cpp
-        parser.hpp)
+        parser.hpp
+        codegen.cpp
+        codegen.hpp)
 
 llvm_map_components_to_libnames(llvm_libs support core irreader)
 

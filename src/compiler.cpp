@@ -20,8 +20,12 @@ int Compiler::compile(const std::vector<std::string>& files) {
         }
         
         auto tokens = lex(file_string, verbose);
-        auto ast = parse(tokens);
+        auto asts = parse(tokens);
+        for (auto& ast: asts) {
+            ast->Accept(*codeGenerator);
+        }
     }
-
     return 0;
 }
+
+
