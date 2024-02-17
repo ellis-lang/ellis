@@ -12,11 +12,11 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token ter
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
 
 class ParsingException : public std::exception {
-    const char* message;
+    std::string message;
 public:
-    explicit ParsingException(const std::string& msg) : message(msg.c_str()) {}
-    const char* what () {
-        return message;
+    explicit ParsingException(const std::string& msg) : message(msg) {}
+    const char* what () const noexcept override {
+        return message.c_str();
     }
 };
 
@@ -79,7 +79,7 @@ std::unique_ptr<ExprAST> parse_argument(std::vector<TokenPair>& tokens) {
 
 std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
     auto name = tokens[0].second;
-    tokens.erase(tokens.begin());
+    tokens.erase(tokens.begin()); // remove 'name'
 
     // Next token can be:
     // 1. number
@@ -129,6 +129,11 @@ std::unique_ptr<ExprAST> parse_char_expr(std::vector<TokenPair>& tokens) {
 
 std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens) {
     tokens.erase(tokens.begin()); // remove '('
+    if (tokens[0].first == tok_rparen) {
+        tokens.erase(tokens.begin()); // remove ')'
+        return std::make_unique<UnitExprAST>(UnitExprAST());
+    }
+
     auto expr = parse_expression(tokens, tok_rparen);
 
     if (!expr) {

@@ -44,6 +44,17 @@ public:
     virtual void Accept(Visitor& v) = 0;
 };
 
+class UnitExprAST : public ExprAST {
+    Value* code;
+public:
+    void print(std::ostream& stream) const override {
+        stream << "Unit()";
+    }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
+
+};
+
 /// NumberExprAST - Expression class for numeric literals like "1.0".
 class NumberExprAST : public ExprAST {
     double val;
@@ -263,7 +274,7 @@ public:
     virtual void Visit(FunctionAST& ast) = 0;
     virtual void Visit(CallExprAST& ast) = 0;
     virtual void Visit(VariableDefAST& ast) = 0;
-
+    virtual void Visit(UnitExprAST& ast) = 0;
 };
 
 

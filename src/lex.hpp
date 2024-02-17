@@ -28,6 +28,7 @@ enum Token {
     tok_comma = 24,
     tok_lbracket = 25,
     tok_rbracket = 26,
+    tok_unit = 27,
 
     tok_equal = 10,
     tok_aster = 11,
@@ -65,7 +66,7 @@ const std::map<std::string, Token> TOKEN_MAP = {
     {">", tok_greater_than},
     {"<", tok_less_than},
     {"then", tok_then},
-    {"in", tok_in}
+    {"in", tok_in},
 };
 
 const std::map<Token, std::string> TOKEN_STRINGS = {

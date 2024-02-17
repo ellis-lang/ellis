@@ -70,6 +70,10 @@ public:
     void Visit(CallExprAST& ast) override {
 
     }
+
+    void Visit(UnitExprAST& ast) override {
+
+    }
 };
 
 #endif //CODEGEN_HPP

@@ -39,3 +39,7 @@ void BinaryExprAST::Accept(Visitor& v) {
 void CallExprAST::Accept(Visitor& v) {
     v.Visit(*this);
 }
+
+void UnitExprAST::Accept(Visitor& v) {
+    v.Visit(*this);
+}
