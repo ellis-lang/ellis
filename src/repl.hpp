@@ -8,6 +8,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+
 const std::string banner = " ____  __    __    __  ____ \n"
                            "(  __)(  )  (  )  (  )/ ___)\n"
                            " ) _) / (_/\\/ (_/\\ )( \\___ \\\n"
@@ -24,14 +25,24 @@ int repl() {
     print_banner();
     char* buf;
     auto c = Compiler(true);
-    while ((buf = readline(">> ")) != nullptr) {
+    bool expr_complete = false;
+    const auto prompt = ">> ";
+    auto incomplete_prompt = "   ";
+
+    while ((buf = readline(prompt)) != nullptr) {
         if (strlen(buf) > 0) {
             add_history(buf);
         }
 
         printf("[%s]\n", buf);
-        auto str = std::string(buf);
-        c.jit(str);
+        try {
+            auto source = std::string(buf);
+            source.erase(source.find_last_not_of(" \n\r\t")+1);
+            c.jit(source);
+
+        } catch (const ParsingException& e) {
+            std::cout << e.what() << std::endl;
+        }
 
         // readline malloc's a new buffer every time.
         free(buf);

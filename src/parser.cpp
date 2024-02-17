@@ -11,14 +11,6 @@ std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens);
 std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token terminator);
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
 
-class ParsingException : public std::exception {
-    std::string message;
-public:
-    explicit ParsingException(const std::string& msg) : message(msg) {}
-    const char* what () const noexcept override {
-        return message.c_str();
-    }
-};
 
 const std::map<Token, int> infix_op = {
     {tok_aster, 10},
