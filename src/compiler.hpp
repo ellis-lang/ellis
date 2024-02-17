@@ -6,11 +6,14 @@
 #define ELLIS_COMPILER_HPP
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include <string>
 #include <map>
 
 #include "codegen.hpp"
+#include "lex.hpp"
+#include "parser.hpp"
 #include "llvm-18/llvm/IR/LLVMContext.h"
 #include "llvm-18/llvm/IR/IRBuilder.h"
 #include "llvm-18/llvm/IR/DerivedTypes.h"
@@ -35,6 +38,10 @@ public:
         codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, nameValues));
     }
     int compile(const std::vector<std::string>& files);
+    int jit(std::string& source) {
+        auto tokens = lex(std::move(source), false);
+        auto ast = parse(tokens);
+    }
 };
 
 

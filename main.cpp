@@ -1,25 +1,11 @@
 #include <iostream>
 #include "include/argparse.hpp"
 #include "src/compiler.hpp"
-
-const std::string banner = " ____  __    __    __  ____ \n"
-                           "(  __)(  )  (  )  (  )/ ___)\n"
-                           " ) _) / (_/\\/ (_/\\ )( \\___ \\\n"
-                           "(____)\\____/\\____/(__)(____/\n";
+#include "src/repl.hpp"
 
 int handle_source_files(const std::vector<std::string>& files, const bool verbose) {
     auto c = Compiler(verbose);
     return c.compile(files);
-}
-
-
-
-int run_interpreter() {
-    std::string expr;
-    std::cout << banner;
-    std::cout << "Version 0.0.1\n";
-    std::cout << "ellis>";
-    return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -50,7 +36,7 @@ int main(int argc, char* argv[]) {
     const auto files = program.get<std::vector<std::string>>("source_files");
 
     if (files.empty())
-        return run_interpreter();
+        return repl();
 
     return handle_source_files(files, program["verbose"] == true);
 }
