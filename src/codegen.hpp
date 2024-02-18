@@ -15,6 +15,15 @@
 
 using namespace llvm;
 
+class CodeGenerationException : public std::exception {
+    std::string message;
+public:
+    explicit CodeGenerationException(const std::string& msg) : message(msg) {}
+    const char* what () const noexcept override {
+        return message.c_str();
+    }
+};
+
 class CodeGenerator: public Visitor {
 
     LLVMContext& TheContext;
@@ -31,6 +40,9 @@ public:
     CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, Value*>& namedValues)
         : TheContext(context), Builder(builder), TheModule(module), NamedValues(namedValues)  {}
 
+    void Visit(ExprAST& ast) {
+
+    }
 
     void Visit(VariableExprAST& ast) override {
         Value *V = NamedValues[ast.getName()];
@@ -68,7 +80,25 @@ public:
     }
 
     void Visit(CallExprAST& ast) override {
+        Function *CalleeF = TheModule.getFunction(ast.getCallee());
+        if (!CalleeF)
+            throw CodeGenerationException("Unknown function referenced");
 
+        auto Args = ast.getArgs();
+        auto a = ast.Args;
+        // If argument mismatch error.
+        if (CalleeF->arg_size() != Args.size())
+            throw CodeGenerationException("Incorrect # arguments passed");
+
+        std::vector<Value *> ArgsV;
+        for (auto & Arg : Args) {
+            Arg->Accept(*this);
+            ArgsV.push_back(Arg->getCode());
+            if (!ArgsV.back())
+                return nullptr;
+        }
+
+        ast.setCode(Builder.CreateCall(CalleeF, ArgsV, "calltmp"));
     }
 
     void Visit(UnitExprAST& ast) override {

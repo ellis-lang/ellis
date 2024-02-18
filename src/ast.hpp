@@ -24,6 +24,7 @@ public:
         stream << "AST";
     }
     virtual void Accept(Visitor& v) = 0;
+    friend class Visitor;
 };
 
 class ExprAST : public AST{
@@ -33,6 +34,7 @@ public:
         stream << "ExprAST";
     }
     virtual void Accept(Visitor& v) = 0;
+    virtual Value* getCode() = 0;
 };
 
 class StatementAST : public AST {
@@ -52,6 +54,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
 
 };
 
@@ -69,6 +72,7 @@ public:
     void Accept(Visitor& v) override;
     double getVal() { return val; }
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
 
 };
 
@@ -83,6 +87,8 @@ public:
     void Accept(Visitor& v) override;
     std::string getVal() { return val; }
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 class CharExprAST : public ExprAST {
@@ -96,6 +102,8 @@ public:
     void Accept(Visitor& v) override;
     char getVal() { return val; }
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 class VariableExprAST : public ExprAST {
@@ -110,6 +118,8 @@ public:
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 class VariableDefAST : public StatementAST {
@@ -128,6 +138,8 @@ public:
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -150,6 +162,8 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 /// CallExprAST - Expression class for function calls.
@@ -173,6 +187,9 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
+    std::string getCallee() { return Callee; }
+    const std::vector<std::unique_ptr<ExprAST>>& getArgs() { return Args; }
+    Value* getCode() { return code; }
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -219,6 +236,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
 };
 
 class IfAST : public StatementAST {
@@ -250,6 +268,8 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+
 };
 
 inline std::ostream& operator<<(std::ostream& os, const AST& a ) {
@@ -275,6 +295,7 @@ public:
     virtual void Visit(CallExprAST& ast) = 0;
     virtual void Visit(VariableDefAST& ast) = 0;
     virtual void Visit(UnitExprAST& ast) = 0;
+
 };
 
 
