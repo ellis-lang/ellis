@@ -14,10 +14,10 @@
 #include "codegen.hpp"
 #include "lex.hpp"
 #include "parser.hpp"
-#include "llvm-18/llvm/IR/LLVMContext.h"
-#include "llvm-18/llvm/IR/IRBuilder.h"
-#include "llvm-18/llvm/IR/DerivedTypes.h"
-#include "llvm-18/llvm/IR/Module.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
 
 using namespace llvm;
 
