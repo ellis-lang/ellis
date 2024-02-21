@@ -84,18 +84,15 @@ public:
         if (!CalleeF)
             throw CodeGenerationException("Unknown function referenced");
 
-        auto Args = ast.getArgs();
-        auto a = ast.Args;
+        auto& Args = ast.getArgs();
         // If argument mismatch error.
         if (CalleeF->arg_size() != Args.size())
-            throw CodeGenerationException("Incorrect # arguments passed");
+            throw CodeGenerationException("Incorrect # arguments passed to function: " + ast.getCallee());
 
         std::vector<Value *> ArgsV;
         for (auto & Arg : Args) {
             Arg->Accept(*this);
             ArgsV.push_back(Arg->getCode());
-            if (!ArgsV.back())
-                return nullptr;
         }
 
         ast.setCode(Builder.CreateCall(CalleeF, ArgsV, "calltmp"));
