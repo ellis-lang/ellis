@@ -54,7 +54,7 @@ TokenPair lex_operator(std::string& source) {
     }
     source.erase(0, op.length());
     tp.second = op;
-    tp.first = get_token_type(op);
+    tp.first = tok_operator;
     return tp;
 }
 
@@ -139,6 +139,8 @@ TokenPair lex_number(std::string& source) {
     source.erase(0, num.length());
     return tp;
 }
+
+
 
 void lex_comment(std::string& source) {
     auto pos = source.find_first_of("\n");

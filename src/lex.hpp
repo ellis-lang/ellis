@@ -20,6 +20,9 @@ enum Token {
     tok_end = 6,
     tok_then = 7,
     tok_in = 8,
+    tok_and = 41,
+    tok_or = 42,
+    tok_not = 43,
 
     tok_lparen = 20,
     tok_rparen = 21,
@@ -42,6 +45,7 @@ enum Token {
     tok_single_quote = 31,
     tok_string_literal = 32,
     tok_char_literal = 33,
+    tok_operator = 34,
 
     tok_identifier = -4,
     tok_number = -5
@@ -67,6 +71,9 @@ const std::map<std::string, Token> TOKEN_MAP = {
     {"<", tok_less_than},
     {"then", tok_then},
     {"in", tok_in},
+    {"or", tok_or},
+    {"and", tok_and},
+    {"not", tok_not}
 };
 
 const std::map<Token, std::string> TOKEN_STRINGS = {
@@ -109,6 +116,31 @@ const std::set operator_set = {
     '|',
     '<',
     '>',
+};
+
+const std::set infix_operators = {
+    "+",
+    "-",
+    "/",
+    "*",
+    "^",
+    "%",
+    "&",
+    "|",
+    ">",
+    "<",
+
+    "+=",
+    "-=",
+    "<=",
+    ">=",
+    "==",
+    "!=",
+    "^=",
+    "%=",
+    "^=",
+    "&=",
+    "|="
 };
 
 

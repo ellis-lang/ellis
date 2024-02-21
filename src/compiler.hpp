@@ -41,6 +41,7 @@ public:
     int jit(std::string& source) {
         auto tokens = lex(std::move(source), false);
         auto ast = parse(tokens);
+        return 0;
     }
 };
 
