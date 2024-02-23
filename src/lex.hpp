@@ -20,9 +20,11 @@ enum Token {
     tok_end = 6,
     tok_then = 7,
     tok_in = 8,
+    tok_return = 9,
     tok_and = 41,
     tok_or = 42,
     tok_not = 43,
+    tok_log_op = 44,
 
     tok_lparen = 20,
     tok_rparen = 21,
@@ -33,13 +35,7 @@ enum Token {
     tok_rbracket = 26,
     tok_unit = 27,
 
-    tok_equal = 10,
-    tok_aster = 11,
-    tok_percent = 12,
-    tok_plus = 13,
-    tok_minus = 14,
-    tok_greater_than = 15,
-    tok_less_than = 16,
+    tok_exponent = 17,
 
     tok_double_quote = 30,
     tok_single_quote = 31,
@@ -61,19 +57,14 @@ const std::map<std::string, Token> TOKEN_MAP = {
     {"(", tok_lparen},
     {")", tok_rparen},
     {";", tok_semicolon},
-    {"+", tok_plus},
-    {"-", tok_minus},
-    {"*", tok_aster},
-    {"=", tok_equal},
     {"\"", tok_double_quote},
     {"'", tok_single_quote},
-    {">", tok_greater_than},
-    {"<", tok_less_than},
     {"then", tok_then},
     {"in", tok_in},
-    {"or", tok_or},
-    {"and", tok_and},
-    {"not", tok_not}
+    {"or", tok_log_op},
+    {"and", tok_log_op},
+    {"not", tok_not},
+    {"return", tok_return}
 };
 
 const std::map<Token, std::string> TOKEN_STRINGS = {
@@ -87,20 +78,16 @@ const std::map<Token, std::string> TOKEN_STRINGS = {
     {tok_rparen, "RPAREN"},
     {tok_semicolon, "SEMICOLON"},
     {tok_colon, "COLON"},
-    {tok_plus, "PLUS"},
-    {tok_minus, "MINUS"},
-    {tok_aster, "ASTERISK"},
-    {tok_equal, "EQUAL"},
     {tok_double_quote, "\""},
     {tok_single_quote, "'"},
     {tok_identifier, "IDENTIFIER"},
     {tok_number, "NUMBER"},
     {tok_string_literal, "STRING_LITERAL"},
     {tok_char_literal, "CHAR_LITERAL"},
-    {tok_greater_than, "GREATER_THAN"},
-    {tok_less_than, "LESS_THAN"},
     {tok_then, "THEN"},
-    {tok_in, "IN"}
+    {tok_in, "IN"},
+    {tok_operator, "OP"},
+    {tok_return, "RETURN"}
 };
 
 const std::set operator_set = {

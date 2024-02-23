@@ -101,6 +101,10 @@ public:
     void Visit(UnitExprAST& ast) override {
 
     }
+
+    void Visit(ReturnAST& ast) override {
+
+    }
 };
 
 #endif //CODEGEN_HPP

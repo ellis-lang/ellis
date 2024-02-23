@@ -239,6 +239,26 @@ public:
     Value* getCode() { return code; }
 };
 
+class ReturnAST: public StatementAST {
+    std::unique_ptr<ExprAST> ret;
+    Value* code;
+public:
+    ReturnAST(std::unique_ptr<ExprAST> returnValue) : ret(std::move(returnValue)) {}
+    ReturnAST() {
+        ret = nullptr;
+    }
+    void print(std::ostream& stream) const override {
+        stream << "Return(";
+        if (ret != nullptr) {
+            ret->print(stream);
+        }
+        stream << ")";
+    }
+    void Accept(Visitor& v) override;
+    void setCode(Value* c) { code = c; }
+    Value* getCode() { return code; }
+};
+
 class IfAST : public StatementAST {
     std::unique_ptr<ExprAST> condition;
     std::vector<std::unique_ptr<AST>> body_on_true;
@@ -295,7 +315,7 @@ public:
     virtual void Visit(CallExprAST& ast) = 0;
     virtual void Visit(VariableDefAST& ast) = 0;
     virtual void Visit(UnitExprAST& ast) = 0;
-
+    virtual void Visit(ReturnAST& ast) = 0;
 };
 
 

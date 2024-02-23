@@ -43,3 +43,7 @@ void CallExprAST::Accept(Visitor& v) {
 void UnitExprAST::Accept(Visitor& v) {
     v.Visit(*this);
 }
+
+void ReturnAST::Accept(Visitor &v) {
+    v.Visit(*this);
+}

@@ -10,22 +10,18 @@
 std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens);
 std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token terminator);
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
+std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS);
 
 
-const std::map<Token, int> infix_op = {
-    {tok_aster, 10},
-    {tok_plus, 9},
-    {tok_minus, 9},
-    {tok_equal, 11},
-    {tok_greater_than, 8},
-    {tok_less_than, 8}
+const std::map<std::string, int> BinopPrecedence = {
+        {">", 10},
+        {"<", 10},
+        {"+", 20},
+        {"-", 20},
+        {"*", 30},
+        {"^", 40},
 };
 
-
-
-bool is_infix(const TokenPair& t) {
-    return infix_op.find(t.first) != infix_op.end();
-}
 
 std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
     auto lhs = parse_primary(tokens, terminator);
@@ -152,6 +148,49 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, const Tok
     }
 }
 
+int get_tok_precedence(const TokenPair& t) {
+    // Make sure it's a declared binop.
+    std::cout << t.second << "\n";
+    int TokPrec = BinopPrecedence.at(t.second);
+    if (TokPrec <= 0) return -1;
+    return TokPrec;
+}
+
+std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS) {
+    // If this is a binop, find its precedence.
+    while (true) {
+        int TokPrec = get_tok_precedence(tokens[0]);
+
+        // If this is a binop that binds at least as tightly as the current binop,
+        // consume it, otherwise we are done.
+        if (TokPrec < ExprPrec)
+            return LHS;
+
+        // Okay, we know this is a binop.
+        std::string BinOp = tokens[0].second;
+        tokens.erase(tokens.begin());
+
+        // Parse the primary expression after the binary operator.
+        auto RHS = parse_primary(tokens);
+        if (!RHS)
+            return nullptr;
+
+        if (tokens[0].first == tok_semicolon)
+            return LHS;
+
+        // If BinOp binds less tightly with RHS than the operator after RHS, let
+        // the pending operator take RHS as its LHS.
+        int NextPrec = get_tok_precedence(tokens[0]);
+        if (TokPrec < NextPrec) {
+            RHS = parse_bin_op_rhs(tokens, TokPrec + 1, std::move(RHS));
+            if (!RHS)
+                return nullptr;
+        }
+
+        // Merge LHS/RHS.
+        LHS = std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
+    }
+}
 
 std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
 
@@ -170,7 +209,10 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
     tokens.erase(tokens.begin());
 
     switch (tokens[0].first) {
-        case tok_equal: {
+        case tok_operator: {
+            if (tokens[0].second != "=") {
+                throw ParsingException("Unexpected operator in let statement: " + tokens[0].second);
+            }
             tokens.erase(tokens.begin()); // remove '='
             auto expr = parse_expression(tokens);
             return std::make_unique<VariableDefAST>(ident, std::move(expr));
@@ -184,7 +226,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
                 tokens.erase(tokens.begin());
             }
 
-            if (tokens[0].first == tok_equal) {
+            if (tokens[0].second == "=") {
                 auto ast = PrototypeAST(ident, arg_names);
                 tokens.erase(tokens.begin());
                 auto func =  std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
@@ -200,7 +242,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             }
             auto ast = PrototypeAST(ident, std::vector<std::string>());
             tokens.erase(tokens.begin());
-            if (tokens[0].first != tok_equal)
+            if (tokens[0].second != "=")
                 throw ParsingException("Expected '=' before function body");
 
             tokens.erase(tokens.begin());
@@ -209,7 +251,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             return std::move(func);
         }
         default:
-            throw ParsingException("Expected identifier, '=' or '(' in let statement, recieved: " + tokens[0].second);
+            throw ParsingException("Expected identifier, '=' or '(' in let statement, received: " + tokens[0].second);
     }
 }
 
@@ -240,11 +282,21 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
             case tok_let:
                 ast.push_back(parse_let(tokens));
             break;
+            case tok_return:
+                tokens.erase(tokens.begin()); // remove 'return'
+                if (tokens.size() > 1) {
+                    if (tokens[0].first == tok_semicolon)
+                        ast.push_back(std::make_unique<ReturnAST>(ReturnAST()));
+                    else
+                        ast.push_back(std::make_unique<ReturnAST>(ReturnAST(parse_expression(tokens))));
+                } else {
+                    throw ParsingException("Unexpected end of function definition");
+                }
             case tok_identifier:
                 // 1. function call
-                    // 2. redefinition of variable
+                // 2. redefinition of variable
                 if (tokens.size() > 1) {
-                    if (tokens[1].first == tok_equal) {
+                    if (tokens[1].second == "=") {
                         auto name = current_token.second;
                         tokens.erase(tokens.begin(), tokens.begin() + 2);
 
@@ -289,7 +341,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
                 // 1. function call
                 // 2. redefinition of variable
                 if (tokens.size() > 1) {
-                    if (tokens[1].first == tok_equal) {
+                    if (tokens[1].second == "=") {
                         auto name = current_token.second;
                         tokens.erase(tokens.begin(), tokens.begin() + 2);
 
@@ -312,6 +364,8 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
             case tok_if:
                 ast.push_back(parse_if(tokens));
                 break;
+            case tok_return:
+                throw ParsingException("'return' statement found outside function definition");
             default:
                 throw ParsingException("Unexpected token: " + current_token.second);
         }
