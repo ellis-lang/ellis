@@ -21,6 +21,7 @@ enum Token {
     tok_then = 7,
     tok_in = 8,
     tok_return = 9,
+    tok_period = 10,
     tok_and = 41,
     tok_or = 42,
     tok_not = 43,
@@ -64,7 +65,8 @@ const std::map<std::string, Token> TOKEN_MAP = {
     {"or", tok_log_op},
     {"and", tok_log_op},
     {"not", tok_not},
-    {"return", tok_return}
+    {"return", tok_return},
+    {".", tok_period}
 };
 
 const std::map<Token, std::string> TOKEN_STRINGS = {
@@ -87,7 +89,8 @@ const std::map<Token, std::string> TOKEN_STRINGS = {
     {tok_then, "THEN"},
     {tok_in, "IN"},
     {tok_operator, "OP"},
-    {tok_return, "RETURN"}
+    {tok_return, "RETURN"},
+    {tok_period, "."}
 };
 
 const std::set operator_set = {
