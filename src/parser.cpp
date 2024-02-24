@@ -10,7 +10,7 @@
 std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens);
 std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token terminator);
 std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
-std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS);
+std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS, Token terminator);
 
 
 const std::map<std::string, int> BinopPrecedence = {
@@ -19,12 +19,23 @@ const std::map<std::string, int> BinopPrecedence = {
         {"+", 20},
         {"-", 20},
         {"*", 30},
+        {"/", 30},
         {"^", 40},
 };
 
 
 std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
     auto lhs = parse_primary(tokens, terminator);
+    if (tokens[0].first == terminator) {
+        tokens.erase(tokens.begin());
+        return lhs;
+    } else {
+        // infix operator
+        if (tokens[0].first == tok_operator) {
+            lhs = parse_bin_op_rhs(tokens, 0, std::move(lhs), terminator);
+        }
+    }
+
     if (tokens[0].first != terminator) {
         throw ParsingException("Expected terminator at the end of expression, got: " + tokens[0].second );
     }
@@ -89,11 +100,16 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, c
             auto ast = CallExprAST(name, std::move(arguments));
             return std::make_unique<CallExprAST>(std::move(ast));
         }
+        case tok_operator: {
+            auto lhs = std::make_unique<VariableExprAST>(name);
+            auto rhs = parse_bin_op_rhs(tokens, 0, std::move(lhs), terminator);
+            return std::move(rhs);
+        }
         default:
             if (tokens[0].first == terminator) {
                 return std::make_unique<VariableExprAST>(VariableExprAST(name));
             }
-            throw ParsingException("Expected ')', found: " + tokens[0].second);
+            throw ParsingException("Expected " + TOKEN_STRINGS.at(terminator) + ", found: " + tokens[0].second);
     }
 }
 
@@ -121,9 +137,7 @@ std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens) {
         tokens.erase(tokens.begin()); // remove ')'
         return std::make_unique<UnitExprAST>(UnitExprAST());
     }
-
     auto expr = parse_expression(tokens, tok_rparen);
-
     if (!expr) {
         return nullptr;
     }
@@ -150,39 +164,41 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, const Tok
 
 int get_tok_precedence(const TokenPair& t) {
     // Make sure it's a declared binop.
-    std::cout << t.second << "\n";
     int TokPrec = BinopPrecedence.at(t.second);
     if (TokPrec <= 0) return -1;
     return TokPrec;
 }
 
-std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS) {
+std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS,
+                                          const Token terminator) {
     // If this is a binop, find its precedence.
     while (true) {
         int TokPrec = get_tok_precedence(tokens[0]);
 
         // If this is a binop that binds at least as tightly as the current binop,
         // consume it, otherwise we are done.
-        if (TokPrec < ExprPrec)
+        if (TokPrec < ExprPrec) {
+            std::cout << "Did not bind tightly enough\n";
             return LHS;
+        }
 
         // Okay, we know this is a binop.
         std::string BinOp = tokens[0].second;
         tokens.erase(tokens.begin());
 
         // Parse the primary expression after the binary operator.
-        auto RHS = parse_primary(tokens);
+        auto RHS = parse_primary(tokens, terminator);
         if (!RHS)
             return nullptr;
 
-        if (tokens[0].first == tok_semicolon)
-            return LHS;
+        if (tokens[0].first == terminator)
+            return std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
 
         // If BinOp binds less tightly with RHS than the operator after RHS, let
         // the pending operator take RHS as its LHS.
         int NextPrec = get_tok_precedence(tokens[0]);
         if (TokPrec < NextPrec) {
-            RHS = parse_bin_op_rhs(tokens, TokPrec + 1, std::move(RHS));
+            RHS = parse_bin_op_rhs(tokens, TokPrec + 1, std::move(RHS), terminator);
             if (!RHS)
                 return nullptr;
         }

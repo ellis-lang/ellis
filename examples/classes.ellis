@@ -1,0 +1,8 @@
+
+
+class Int: object =
+    Int () = end
+
+    let add b =
+
+end
