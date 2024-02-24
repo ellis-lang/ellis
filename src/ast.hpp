@@ -163,7 +163,9 @@ public:
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
     Value* getCode() { return code; }
-
+    ExprAST& getLHS() { return *LHS; }
+    ExprAST& getRHS() { return *RHS; }
+    std::string& getOp() { return Op; }
 };
 
 /// CallExprAST - Expression class for function calls.
@@ -212,13 +214,15 @@ public:
         stream << ")";
     }
     void Accept(Visitor& v);
+    std::vector<std::string>& getArgs() { return Args; }
+    std::string& getName() { return Name; }
 };
 
 /// FunctionAST - This class represents a function definition itself.
 class FunctionAST : public StatementAST {
     std::unique_ptr<PrototypeAST> Proto;
     std::vector<std::unique_ptr<AST>> body;
-    Value* code;
+    Function* code;
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                 std::vector<std::unique_ptr<AST>> Body)
@@ -235,8 +239,10 @@ public:
         }
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    void setCode(Function* c) { code = c; }
+    Function* getCode() { return code; }
+    PrototypeAST& getProto() { return *Proto; }
+    std::vector<std::unique_ptr<AST>>& getBody() { return body; }
 };
 
 class ReturnAST: public StatementAST {
