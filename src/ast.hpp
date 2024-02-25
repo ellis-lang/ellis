@@ -24,6 +24,7 @@ public:
         stream << "AST";
     }
     virtual void Accept(Visitor& v) = 0;
+    virtual Value* getCode() = 0;
     friend class Visitor;
 };
 
@@ -44,6 +45,7 @@ public:
         stream << "StatementAST";
     }
     virtual void Accept(Visitor& v) = 0;
+    virtual Value* getCode() = 0;
 };
 
 class UnitExprAST : public ExprAST {
@@ -54,7 +56,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -72,7 +74,7 @@ public:
     void Accept(Visitor& v) override;
     double getVal() { return val; }
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -87,7 +89,7 @@ public:
     void Accept(Visitor& v) override;
     std::string getVal() { return val; }
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -102,7 +104,7 @@ public:
     void Accept(Visitor& v) override;
     char getVal() { return val; }
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -118,7 +120,7 @@ public:
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -138,7 +140,7 @@ public:
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 
@@ -162,7 +164,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
     ExprAST& getLHS() { return *LHS; }
     ExprAST& getRHS() { return *RHS; }
     std::string& getOp() { return Op; }
@@ -191,7 +193,7 @@ public:
     void setCode(Value* c) { code = c; }
     std::string getCallee() { return Callee; }
     const std::vector<std::unique_ptr<ExprAST>>& getArgs() { return Args; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -240,7 +242,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Function* c) { code = c; }
-    Function* getCode() { return code; }
+    Function* getCode() override { return code; }
     PrototypeAST& getProto() { return *Proto; }
     std::vector<std::unique_ptr<AST>>& getBody() { return body; }
 };
@@ -294,7 +296,7 @@ public:
     }
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    Value* getCode() override { return code; }
 
 };
 

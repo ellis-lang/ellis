@@ -40,7 +40,11 @@ public:
     int compile(const std::vector<std::string>& files);
     int jit(std::string& source) {
         auto tokens = lex(std::move(source), false);
-        auto ast = parse(tokens);
+        auto asts = parse(tokens);
+        for (auto& tree : asts) {
+            tree->Accept(*codeGenerator);
+
+        }
         return 0;
     }
 };

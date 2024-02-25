@@ -42,6 +42,8 @@ int repl() {
 
         } catch (const ParsingException& e) {
             std::cout << e.what() << std::endl;
+        } catch (const CodeGenerationException& e) {
+            std::cout << e.what() << std::endl;
         }
 
         // readline malloc's a new buffer every time.

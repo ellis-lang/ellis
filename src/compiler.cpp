@@ -22,7 +22,7 @@ int Compiler::compile(const std::vector<std::string>& files) {
         auto tokens = lex(file_string, verbose);
         auto asts = parse(tokens);
         for (auto& ast: asts) {
-            //ast->Accept(*codeGenerator);
+            ast->Accept(*codeGenerator);
         }
     }
     return 0;
