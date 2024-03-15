@@ -173,6 +173,9 @@ std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int Ex
                                           const Token terminator) {
     // If this is a binop, find its precedence.
     while (true) {
+        if (tokens[0].first == terminator)
+            return LHS;
+
         int TokPrec = get_tok_precedence(tokens[0]);
 
         // If this is a binop that binds at least as tightly as the current binop,

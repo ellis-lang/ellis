@@ -43,7 +43,8 @@ public:
         auto asts = parse(tokens);
         for (auto& tree : asts) {
             tree->Accept(*codeGenerator);
-
+            tree->getCode().v->print(errs());
+            printf("\n");
         }
         return 0;
     }

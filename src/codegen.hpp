@@ -115,10 +115,10 @@ public:
             ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
                                            ast.getRHS().getCode().v, "addtmp"));
         else if (op == "-")
-            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
+            ast.setCode(Builder.CreateFSub(ast.getLHS().getCode().v,
                                            ast.getRHS().getCode().v, "subtmp"));
         else if (op == "*")
-            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
+            ast.setCode(Builder.CreateFMul(ast.getLHS().getCode().v,
                                            ast.getRHS().getCode().v, "multmp"));
         else if (op == "<")
             ast.setCode(Builder.CreateUIToFP(ast.getLHS().getCode().v,
