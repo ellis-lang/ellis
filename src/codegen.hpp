@@ -112,16 +112,16 @@ public:
         auto op = ast.getOp();
 
         if (op == "+")
-            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode(),
-                                           ast.getRHS().getCode(), "addtmp"));
+            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
+                                           ast.getRHS().getCode().v, "addtmp"));
         else if (op == "-")
-            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode(),
-                                           ast.getRHS().getCode(), "subtmp"));
+            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
+                                           ast.getRHS().getCode().v, "subtmp"));
         else if (op == "*")
-            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode(),
-                                           ast.getRHS().getCode(), "multmp"));
+            ast.setCode(Builder.CreateFAdd(ast.getLHS().getCode().v,
+                                           ast.getRHS().getCode().v, "multmp"));
         else if (op == "<")
-            ast.setCode(Builder.CreateUIToFP(ast.getLHS().getCode(),
+            ast.setCode(Builder.CreateUIToFP(ast.getLHS().getCode().v,
                                              Type::getDoubleTy(TheContext), "booltmp"));
         else
             throw CodeGenerationException("Infix operator not implemented: " + op);
@@ -140,7 +140,7 @@ public:
         std::vector<Value *> ArgsV;
         for (auto & Arg : Args) {
             Arg->Accept(*this);
-            ArgsV.push_back(Arg->getCode());
+            ArgsV.push_back(Arg->getCode().v);
         }
 
         ast.setCode(Builder.CreateCall(CalleeF, ArgsV, "calltmp"));

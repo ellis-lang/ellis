@@ -15,7 +15,13 @@
 
 using namespace llvm;
 
+
 class Visitor;
+
+union Code {
+    Value* v;
+    Function* f;
+};
 
 class AST {
 public:
@@ -24,7 +30,7 @@ public:
         stream << "AST";
     }
     virtual void Accept(Visitor& v) = 0;
-    virtual Value* getCode() = 0;
+    virtual Code getCode() = 0;
     friend class Visitor;
 };
 
@@ -35,7 +41,7 @@ public:
         stream << "ExprAST";
     }
     virtual void Accept(Visitor& v) = 0;
-    virtual Value* getCode() = 0;
+    virtual Code getCode() = 0;
 };
 
 class StatementAST : public AST {
@@ -45,25 +51,25 @@ public:
         stream << "StatementAST";
     }
     virtual void Accept(Visitor& v) = 0;
-    virtual Value* getCode() = 0;
+    virtual Code getCode() = 0;
 };
 
 class UnitExprAST : public ExprAST {
-    Value* code;
+    Code code;
 public:
     void print(std::ostream& stream) const override {
         stream << "Unit()";
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
 class NumberExprAST : public ExprAST {
     double val;
-    Value* code;
+    Code code;
 public:
     explicit NumberExprAST(const double Val) : val(Val) {}
 
@@ -73,14 +79,14 @@ public:
 
     void Accept(Visitor& v) override;
     double getVal() { return val; }
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
 class StringExprAST : public ExprAST {
     std::string val;
-    Value* code;
+    Code code;
 public:
     explicit StringExprAST(std::string Val) : val(std::move(Val)) {}
     void print (std::ostream& stream) const override {
@@ -88,14 +94,14 @@ public:
     }
     void Accept(Visitor& v) override;
     std::string getVal() { return val; }
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
 class CharExprAST : public ExprAST {
     char val;
-    Value* code;
+    Code code;
 public:
     explicit CharExprAST(char Val) : val(Val) {}
     void print (std::ostream& stream) const override {
@@ -103,14 +109,14 @@ public:
     }
     void Accept(Visitor& v) override;
     char getVal() { return val; }
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
 class VariableExprAST : public ExprAST {
     std::string name;
-    Value* code;
+    Code code;
 public:
     explicit VariableExprAST(std::string Name) : name(std::move(Name)) {}
 
@@ -119,15 +125,15 @@ public:
     }
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
 class VariableDefAST : public StatementAST {
     std::string name;
     std::unique_ptr<ExprAST> value;
-    Value* code;
+    Code code;
 public:
     VariableDefAST(std::string Name, std::unique_ptr<ExprAST> v)
                     : name(std::move(Name)), value(std::move(v)) {}
@@ -139,8 +145,8 @@ public:
     }
     void Accept(Visitor& v) override;
     std::string getName() { return name; }
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
@@ -148,7 +154,7 @@ public:
 class BinaryExprAST : public ExprAST {
     std::string Op;
     std::unique_ptr<ExprAST> LHS, RHS;
-    Value* code;
+    Code code;
 public:
     BinaryExprAST(std::string Op, std::unique_ptr<ExprAST> LHS,
                   std::unique_ptr<ExprAST> RHS)
@@ -163,8 +169,8 @@ public:
         stream << ")";
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
     ExprAST& getLHS() { return *LHS; }
     ExprAST& getRHS() { return *RHS; }
     std::string& getOp() { return Op; }
@@ -174,7 +180,7 @@ public:
 class CallExprAST : public ExprAST {
     std::string Callee;
     std::vector<std::unique_ptr<ExprAST>> Args;
-    Value* code;
+    Code code;
 public:
     CallExprAST(std::string Callee,
                 std::vector<std::unique_ptr<ExprAST>> Args)
@@ -190,10 +196,10 @@ public:
         stream << ")";
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
+    void setCode(Value* c) { code.v = c; }
     std::string getCallee() { return Callee; }
     const std::vector<std::unique_ptr<ExprAST>>& getArgs() { return Args; }
-    Value* getCode() override { return code; }
+    Code getCode() override { return code; }
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -224,13 +230,13 @@ public:
 class FunctionAST : public StatementAST {
     std::unique_ptr<PrototypeAST> Proto;
     std::vector<std::unique_ptr<AST>> body;
-    Function* code;
+    Code code;
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                 std::vector<std::unique_ptr<AST>> Body)
         : Proto(std::move(Proto)), body(std::move(Body)) {}
 
-    void print(std::ostream& stream) const override {
+    void print(std::ostream& stream) const {
         stream << "Function ";
         Proto->print(stream);
         stream << "\n";
@@ -240,16 +246,16 @@ public:
             stream << "\n";
         }
     }
-    void Accept(Visitor& v) override;
-    void setCode(Function* c) { code = c; }
-    Function* getCode() override { return code; }
+    void Accept(Visitor& v);
+    void setCode(Function* c) { code.f = c; }
+    Code getCode() { return code; }
     PrototypeAST& getProto() { return *Proto; }
     std::vector<std::unique_ptr<AST>>& getBody() { return body; }
 };
 
 class ReturnAST: public StatementAST {
     std::unique_ptr<ExprAST> ret;
-    Value* code;
+    Code code;
 public:
     ReturnAST(std::unique_ptr<ExprAST> returnValue) : ret(std::move(returnValue)) {}
     ReturnAST() {
@@ -263,15 +269,15 @@ public:
         stream << ")";
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
-    Value* getCode() { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() { return code; }
 };
 
 class IfAST : public StatementAST {
     std::unique_ptr<ExprAST> condition;
     std::vector<std::unique_ptr<AST>> body_on_true;
     std::vector<std::unique_ptr<AST>> body_on_false;
-    Value* code;
+    Code code;
 public:
     IfAST(std::unique_ptr<ExprAST> cond,
           std::vector<std::unique_ptr<AST>> BodyOnTrue,
@@ -295,8 +301,8 @@ public:
         }
     }
     void Accept(Visitor& v) override;
-    void setCode(Value* c) { code = c; }
-    Value* getCode() override { return code; }
+    void setCode(Value* c) { code.v = c; }
+    Code getCode() override { return code; }
 
 };
 
