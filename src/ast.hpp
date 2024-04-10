@@ -147,7 +147,7 @@ public:
     std::string getName() { return name; }
     void setCode(Value* c) { code.v = c; }
     Code getCode() override { return code; }
-
+    ExprAST& getValue() { return *value; }
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
