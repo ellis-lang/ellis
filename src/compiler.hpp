@@ -27,7 +27,7 @@ class Compiler {
     std::unique_ptr<LLVMContext> TheContext;
     std::unique_ptr<IRBuilder<>> builder;
     std::unique_ptr<Module> module;
-    std::map<std::string, Value *> nameValues;
+    std::map<std::string, AllocaInst *> namedValues;
     std::unique_ptr<CodeGenerator> codeGenerator;
 public:
     explicit Compiler(const bool verbose) : verbose(verbose) {
@@ -35,7 +35,7 @@ public:
         std::string mname = "ellis";
         module = std::make_unique<Module>(StringRef(mname), *TheContext);
         builder = std::make_unique<IRBuilder<>>(*TheContext);
-        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, nameValues));
+        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues));
     }
     int compile(const std::vector<std::string>& files);
     int jit(std::string& source) {

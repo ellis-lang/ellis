@@ -13,6 +13,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include <iostream>
 
 using namespace llvm;
 
@@ -30,7 +31,7 @@ class CodeGenerator: public Visitor {
     LLVMContext& TheContext;
     IRBuilder<>& Builder;
     Module& TheModule;
-    std::map<std::string, Value*>& NamedValues;
+    std::map<std::string, AllocaInst*>& NamedValues;
     std::vector<Value*> code;
 
     Value* LogErrorV(const char *Str) {
@@ -38,18 +39,30 @@ class CodeGenerator: public Visitor {
         return nullptr;
     }
 public:
-    CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, Value*>& namedValues)
+    CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, AllocaInst*>& namedValues)
         : TheContext(context), Builder(builder), TheModule(module), NamedValues(namedValues)  {}
+
 
     void Visit(ExprAST& ast) {
 
     }
 
+    AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
+                                              const std::string &VarName) {
+        IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
+                         TheFunction->getEntryBlock().begin());
+        return TmpB.CreateAlloca(Type::getDoubleTy(TheContext), nullptr,
+                                 VarName);
+    }
+
     void Visit(VariableExprAST& ast) override {
-        Value *V = NamedValues[ast.getName()];
+        AllocaInst *V = NamedValues[ast.getName()];
         if (!V)
             LogErrorV("Unknown variable name");
-        ast.setCode(V);
+        else {
+            auto c = Builder.CreateLoad(V->getAllocatedType(), V, ast.getName().c_str());
+            ast.setCode(c);
+        }
     }
 
     void Visit(NumberExprAST& ast) override {
@@ -57,7 +70,23 @@ public:
     }
 
     void Visit(VariableDefAST& ast) override {
-
+        std::cout << "generating variable def code\n";
+        ast.getValue().Accept(*this);
+        std::cout << "rhs code generated\n";
+        auto c = ast.getValue().getCode();
+        auto var = NamedValues[ast.getName()];
+        if (!var) {
+            std::cout << "var not found creating\n";
+            auto a = Builder.CreateAlloca(Type::getDoubleTy(TheContext), nullptr, ast.getName());
+            std::cout << "allocated\n";
+            Builder.CreateStore(c.v, a);
+            std::cout << "created store\n";
+            NamedValues[ast.getName()] = a;
+            std::cout << "adding to namevalues\n";
+        } else {
+            LogErrorV("Variable already declared");
+        }
+        std::cout << "done\n";
     }
 
     void Visit(StringExprAST& ast) override {
@@ -92,8 +121,15 @@ public:
 
         // Record the function arguments in the NamedValues map.
         NamedValues.clear();
-        for (auto &Arg : F->args())
-            NamedValues[std::string(Arg.getName())] = &Arg;
+        for (auto &Arg : F->args()) {
+            AllocaInst *Alloca = CreateEntryBlockAlloca(F, Arg.getName().str());
+
+            // Store the initial value into the alloca.
+            Builder.CreateStore(&Arg, Alloca);
+
+            // Add arguments to variable symbol table.
+            NamedValues[std::string(Arg.getName())] = Alloca;
+        }
 
         for (auto& expr : ast.getBody()) {
             expr->Accept(*this);
