@@ -130,9 +130,11 @@ TokenPair lex_number(std::string& source) {
     std::string num;
     auto tp = TokenPair();
     for (auto c: source) {
+        // TODO: Add support for floats
         if (isdigit(c) || c == '.')
             num += c;
         else break;
+
     }
     tp.first = tok_number;
     tp.second = num;
