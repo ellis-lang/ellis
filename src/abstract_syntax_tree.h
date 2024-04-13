@@ -108,8 +108,7 @@ public:
     std::string name;
     std::unique_ptr<ExprAST> value;
     llvm::Value* code;
-    llvm::Value *codegen(ASTVisitor &visitor) override;
-
+    llvm::Value* codegen(ASTVisitor &visitor) override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.

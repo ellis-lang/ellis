@@ -28,7 +28,7 @@ CodegenVisitor::CodegenVisitor() {
 void CodegenVisitor::dumpLLVMIR() { module->print(llvm::outs(), nullptr); }
 
 llvm::Value *CodegenVisitor::codegen(const NumberExprAST &expr) {
-    return nullptr;
+    return llvm::ConstantInt::getSigned((llvm::Type::getInt32Ty(*context)), expr.val);
 }
 
 llvm::Value *CodegenVisitor::codegen(const CharExprAST &expr) {
@@ -40,15 +40,26 @@ llvm::Value *CodegenVisitor::codegen(const StringExprAST &expr) {
 }
 
 llvm::Value *CodegenVisitor::codegen(const VariableExprAST &expr) {
-    llvm::Value *val = varEnv[expr];
+    llvm::Value *val = varEnv[expr.name];
     if (val == nullptr) {
-        throw new IRCodegenException(std::string("Var not found: " + var.varName));
+        throw new CodegenException(std::string("Var not found: " + expr.name));
     }
     return val;
 }
 
 llvm::Value *CodegenVisitor::codegen(const VariableDefAST &expr) {
-    return nullptr;
+    llvm::Value *boundVal = expr.value->codegen(*this);
+
+    // put allocainst in entry block of parent function, to be optimised by
+    // mem2reg
+    llvm::Function *parentFunction = builder->GetInsertBlock()->getParent();
+    llvm::IRBuilder<> TmpBuilder(&(parentFunction->getEntryBlock()),
+                                parentFunction->getEntryBlock().begin());
+    llvm::AllocaInst *var = TmpBuilder.CreateAlloca(boundVal->getType(), nullptr,
+                                                    llvm::Twine(expr.name));
+    varEnv[expr.name] = var;
+    builder->CreateStore(boundVal, var);
+    return boundVal;
 }
 
 llvm::Value *CodegenVisitor::codegen(const BinaryExprAST &expr) {
@@ -56,10 +67,6 @@ llvm::Value *CodegenVisitor::codegen(const BinaryExprAST &expr) {
 }
 
 llvm::Value *CodegenVisitor::codegen(const CallExprAST &expr) {
-    return nullptr;
-}
-
-llvm::Value *CodegenVisitor::codegen(const Function &expr) {
     return nullptr;
 }
 

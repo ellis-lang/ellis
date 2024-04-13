@@ -7,7 +7,7 @@
 
 
 #include <llvm/IR/Value.h>
-#include "ast.hpp"
+#include "abstract_syntax_tree.h"
 
 class ASTVisitor {
 public:
