@@ -24,6 +24,11 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         codegen.cpp
         codegen.hpp
         repl.hpp
+        ast_visitor.h
+        codegen_visitor.cpp
+        codegen_visitor.h
+        abstract_syntax_tree.cpp
+        abstract_syntax_tree.h
 )
 
 llvm_map_components_to_libnames(llvm_libs support core irreader)

@@ -3,6 +3,8 @@
 //
 
 #include "ast.hpp"
+#include "abstract_syntax_tree.h"
+
 
 void NumberExprAST::Accept(Visitor& v) {
     v.Visit(*this);
@@ -47,3 +49,4 @@ void UnitExprAST::Accept(Visitor& v) {
 void ReturnAST::Accept(Visitor &v) {
     v.Visit(*this);
 }
+
