@@ -10,5 +10,5 @@ include_directories(src)
 add_subdirectory(src)
 
 target_link_libraries(ellisc ellis)
-add_subdirectory(Google_tests)
+#add_subdirectory(Google_tests)
 

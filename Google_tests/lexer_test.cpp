@@ -10,7 +10,7 @@ TEST(LexerTestSuite, SimpleLet) {
     const std::vector<TokenPair> result = {
         TokenPair(tok_let, "let"),
         TokenPair(tok_identifier, "x"),
-        TokenPair(tok_equal, "="),
+        TokenPair(tok_operator, "="),
         TokenPair(tok_number, "1"),
         TokenPair(tok_semicolon, ";")
     };
