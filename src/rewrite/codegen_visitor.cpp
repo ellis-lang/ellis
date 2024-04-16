@@ -63,7 +63,9 @@ llvm::Value *CodegenVisitor::codegen(const VariableDefAST &expr) {
 }
 
 llvm::Value *CodegenVisitor::codegen(const BinaryExprAST &expr) {
-    return nullptr;
+    auto lhs_code = expr.LHS->codegen(*this);
+    auto rhs_code = expr.RHS->codegen(*this);
+    
 }
 
 llvm::Value *CodegenVisitor::codegen(const CallExprAST &expr) {

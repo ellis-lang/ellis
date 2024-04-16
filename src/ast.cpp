@@ -3,7 +3,6 @@
 //
 
 #include "ast.hpp"
-#include "abstract_syntax_tree.h"
 
 
 void NumberExprAST::Accept(Visitor& v) {

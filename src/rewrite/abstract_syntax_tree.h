@@ -249,10 +249,6 @@ inline std::ostream& operator<<(std::ostream& os, const AST& a ) {
     return os;
 }
 
-inline std::unique_ptr<ExprAST> LogError(const char *Str) {
-    fprintf(stderr, "Error: %s\n", Str);
-    return nullptr;
-}
 
 
 #endif //ELLIS_ABSTRACT_SYNTAX_TREE_H

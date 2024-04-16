@@ -18,7 +18,6 @@ public:
     virtual llvm::Value* codegen(const VariableDefAST &expr) = 0;
     virtual llvm::Value* codegen(const BinaryExprAST &expr) = 0;
     virtual llvm::Value* codegen(const CallExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const Function &expr) = 0;
     virtual llvm::Value* codegen(const IfAST &expr) = 0;
 
 };

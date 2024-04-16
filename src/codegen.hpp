@@ -57,8 +57,13 @@ public:
 
     void Visit(VariableExprAST& ast) override {
         AllocaInst *V = NamedValues[ast.getName()];
-        if (!V)
+        if (!V) {
+            auto v = TheModule.getGlobalVariable(ast.getName());
+            if (v) {
+                ast.setCode(v);
+            }
             LogErrorV("Unknown variable name");
+        }
         else {
             auto c = Builder.CreateLoad(V->getAllocatedType(), V, ast.getName().c_str());
             ast.setCode(c);
@@ -72,21 +77,36 @@ public:
     void Visit(VariableDefAST& ast) override {
         std::cout << "generating variable def code\n";
         ast.getValue().Accept(*this);
-        std::cout << "rhs code generated\n";
         auto c = ast.getValue().getCode();
         auto var = NamedValues[ast.getName()];
         if (!var) {
-            std::cout << "var not found creating\n";
-            auto a = Builder.CreateAlloca(Type::getDoubleTy(TheContext), nullptr, ast.getName());
-            std::cout << "allocated\n";
-            Builder.CreateStore(c.v, a);
-            std::cout << "created store\n";
-            NamedValues[ast.getName()] = a;
-            std::cout << "adding to namevalues\n";
+            //std::cout << "gv created\n";
+            //TheModule.getOrInsertGlobal(ast.getName(), t);
+            //auto gVar = TheModule.getNamedGlobal(ast.getName());
+            //gVar->setInitializer(dyn_cast<ConstantInt>(c.v));
+            //NamedValues[ast.getName()] = gVar;
+            //Builder.CreateStore(gVar, c.v);
+            //auto val = Builder.CreateLoad(t, v, ast.getName());
+            //std::cout << "load created\n";
+            //ast.setCode(val);
+
+            llvm::Function *parentFunction = Builder.GetInsertBlock()->getParent();
+            if (!parentFunction)
+                std::cout << "couldnt get parent function";
+            llvm::IRBuilder<> TmpBuilder(&(parentFunction->getEntryBlock()),
+                                         parentFunction->getEntryBlock().begin());
+            std::cout << "builder created\n";
+            llvm::AllocaInst *v = TmpBuilder.CreateAlloca(c.v->getType(), nullptr,
+                                                            llvm::Twine(ast.getName()));
+            NamedValues[ast.getName()] = v;
+
+            //Builder.CreateStore(c.v, v);
+            ast.setCode(c.v);
+
         } else {
             LogErrorV("Variable already declared");
         }
-        std::cout << "done\n";
+        //std::cout << "done\n";
     }
 
     void Visit(StringExprAST& ast) override {
