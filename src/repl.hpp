@@ -28,7 +28,6 @@ int repl() {
     bool expr_complete = false;
     const auto prompt = ">> ";
     auto incomplete_prompt = "   ";
-
     while ((buf = readline(prompt)) != nullptr) {
         if (strlen(buf) > 0) {
             add_history(buf);

@@ -24,13 +24,10 @@ using namespace llvm;
 class EllisJIT {
 private:
     std::unique_ptr<llvm::orc::ExecutionSession> ES;
-
     DataLayout DL;
     llvm::orc::MangleAndInterner Mangle;
-
     llvm::orc::RTDyldObjectLinkingLayer ObjectLayer;
     llvm::orc::IRCompileLayer CompileLayer;
-
     llvm::orc::JITDylib &MainJD;
 
 public:

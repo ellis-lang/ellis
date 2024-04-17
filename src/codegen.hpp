@@ -31,7 +31,6 @@ class CodeGenerator: public Visitor {
     LLVMContext& TheContext;
     IRBuilder<>& Builder;
     Module& TheModule;
-    std::map<std::string, AllocaInst*>& NamedValues;
     std::vector<Value*> code;
 
     Value* LogErrorV(const char *Str) {
@@ -42,10 +41,9 @@ public:
     CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, AllocaInst*>& namedValues)
         : TheContext(context), Builder(builder), TheModule(module), NamedValues(namedValues)  {}
 
+        void Visit(ExprAST& ast) {}
 
-    void Visit(ExprAST& ast) {
-
-    }
+    std::map<std::string, AllocaInst*> NamedValues;
 
     AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
                                               const std::string &VarName) {
@@ -56,13 +54,16 @@ public:
     }
 
     void Visit(VariableExprAST& ast) override {
+        for (auto k: NamedValues) {
+            std::cout << k.first << "\n";
+        }
         AllocaInst *V = NamedValues[ast.getName()];
         if (!V) {
             auto v = TheModule.getGlobalVariable(ast.getName());
             if (v) {
                 ast.setCode(v);
-            }
-            LogErrorV("Unknown variable name");
+            } else
+                LogErrorV("Unknown variable name");
         }
         else {
             auto c = Builder.CreateLoad(V->getAllocatedType(), V, ast.getName().c_str());
@@ -75,32 +76,20 @@ public:
     }
 
     void Visit(VariableDefAST& ast) override {
-        std::cout << "generating variable def code\n";
         ast.getValue().Accept(*this);
         auto c = ast.getValue().getCode();
         auto var = NamedValues[ast.getName()];
         if (!var) {
-            //std::cout << "gv created\n";
-            //TheModule.getOrInsertGlobal(ast.getName(), t);
-            //auto gVar = TheModule.getNamedGlobal(ast.getName());
-            //gVar->setInitializer(dyn_cast<ConstantInt>(c.v));
-            //NamedValues[ast.getName()] = gVar;
-            //Builder.CreateStore(gVar, c.v);
-            //auto val = Builder.CreateLoad(t, v, ast.getName());
-            //std::cout << "load created\n";
-            //ast.setCode(val);
-
             llvm::Function *parentFunction = Builder.GetInsertBlock()->getParent();
             if (!parentFunction)
                 std::cout << "couldnt get parent function";
             llvm::IRBuilder<> TmpBuilder(&(parentFunction->getEntryBlock()),
                                          parentFunction->getEntryBlock().begin());
-            std::cout << "builder created\n";
             llvm::AllocaInst *v = TmpBuilder.CreateAlloca(c.v->getType(), nullptr,
                                                             llvm::Twine(ast.getName()));
-            NamedValues[ast.getName()] = v;
 
-            //Builder.CreateStore(c.v, v);
+            Builder.CreateStore(c.v, v);
+            NamedValues[ast.getName()] = v;
             ast.setCode(c.v);
 
         } else {
@@ -155,7 +144,8 @@ public:
             expr->Accept(*this);
         }
 
-        //Value* RetVal = ast.getBody().back().getCode();
+        Value* RetVal = ast.getBody().back()->getCode().v;
+        Builder.CreateRet(RetVal);
 
         verifyFunction(*F);
         ast.setCode(F);
