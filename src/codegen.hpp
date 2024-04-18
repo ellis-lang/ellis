@@ -38,12 +38,12 @@ class CodeGenerator: public Visitor {
         return nullptr;
     }
 public:
-    CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, AllocaInst*>& namedValues)
+    CodeGenerator(LLVMContext& context, IRBuilder<>& builder, Module& module, std::map<std::string, AllocaInst*>* namedValues)
         : TheContext(context), Builder(builder), TheModule(module), NamedValues(namedValues)  {}
 
         void Visit(ExprAST& ast) {}
 
-    std::map<std::string, AllocaInst*> NamedValues;
+    std::map<std::string, AllocaInst*>* NamedValues;
 
     AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
                                               const std::string &VarName) {
@@ -54,10 +54,7 @@ public:
     }
 
     void Visit(VariableExprAST& ast) override {
-        for (auto k: NamedValues) {
-            std::cout << k.first << "\n";
-        }
-        AllocaInst *V = NamedValues[ast.getName()];
+        AllocaInst *V = (*NamedValues)[ast.getName()];
         if (!V) {
             auto v = TheModule.getGlobalVariable(ast.getName());
             if (v) {
@@ -67,6 +64,7 @@ public:
         }
         else {
             auto c = Builder.CreateLoad(V->getAllocatedType(), V, ast.getName().c_str());
+            std::cout << "load created\n";
             ast.setCode(c);
         }
     }
@@ -78,7 +76,7 @@ public:
     void Visit(VariableDefAST& ast) override {
         ast.getValue().Accept(*this);
         auto c = ast.getValue().getCode();
-        auto var = NamedValues[ast.getName()];
+        auto var = (*NamedValues)[ast.getName()];
         if (!var) {
             llvm::Function *parentFunction = Builder.GetInsertBlock()->getParent();
             if (!parentFunction)
@@ -89,7 +87,7 @@ public:
                                                             llvm::Twine(ast.getName()));
 
             Builder.CreateStore(c.v, v);
-            NamedValues[ast.getName()] = v;
+            (*NamedValues)[ast.getName()] = v;
             ast.setCode(c.v);
 
         } else {
@@ -129,7 +127,8 @@ public:
         Builder.SetInsertPoint(BB);
 
         // Record the function arguments in the NamedValues map.
-        NamedValues.clear();
+        //(*NamedValues).clear();
+        auto tempNamedValues = *NamedValues;
         for (auto &Arg : F->args()) {
             AllocaInst *Alloca = CreateEntryBlockAlloca(F, Arg.getName().str());
 
@@ -137,7 +136,7 @@ public:
             Builder.CreateStore(&Arg, Alloca);
 
             // Add arguments to variable symbol table.
-            NamedValues[std::string(Arg.getName())] = Alloca;
+            tempNamedValues[std::string(Arg.getName())] = Alloca;
         }
 
         for (auto& expr : ast.getBody()) {

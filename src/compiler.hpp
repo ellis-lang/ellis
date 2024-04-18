@@ -39,7 +39,7 @@ class Compiler {
     std::unique_ptr<LLVMContext> TheContext;
     std::unique_ptr<IRBuilder<>> builder;
     std::unique_ptr<Module> module;
-    std::map<std::string, AllocaInst *> namedValues;
+    std::unique_ptr<std::map<std::string, AllocaInst *>> namedValues;
     std::unique_ptr<CodeGenerator> codeGenerator;
     std::unique_ptr<EllisJIT> TheJIT;
 
@@ -75,7 +75,7 @@ public:
         // Reassociate expressions.
         TheFPM->addPass(ReassociatePass());
         // Eliminate Common SubExpressions.
-        TheFPM->addPass(GVNPass());
+        TheFPM->addPass(GVNHoistPass());
         // Simplify the control flow graph (deleting unreachable blocks, etc).
         TheFPM->addPass(SimplifyCFGPass());
 
@@ -84,7 +84,11 @@ public:
         PB.registerModuleAnalyses(*TheMAM);
         PB.registerFunctionAnalyses(*TheFAM);
         PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
-        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues));
+        std::cout << "Printing inside reinit:\n";
+        for (auto p: *namedValues) {
+            std::cout << p.first << "\n";
+        }
+        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues.get()));
     }
 
     void InitializeModuleAndManagers() {
@@ -94,6 +98,7 @@ public:
         module->setDataLayout(TheJIT->getDataLayout());
         // Create a new builder for the module.
         builder = std::make_unique<IRBuilder<>>(*TheContext);
+        namedValues = std::make_unique<std::map<std::string, AllocaInst*>>();
         // Create new pass and analysis managers.
         TheFPM = std::make_unique<FunctionPassManager>();
         TheLAM = std::make_unique<LoopAnalysisManager>();
@@ -109,7 +114,7 @@ public:
         // Reassociate expressions.
         TheFPM->addPass(ReassociatePass());
         // Eliminate Common SubExpressions.
-        TheFPM->addPass(GVNPass());
+        TheFPM->addPass(GVNHoistPass());
         // Simplify the control flow graph (deleting unreachable blocks, etc).
         TheFPM->addPass(SimplifyCFGPass());
 
@@ -118,7 +123,7 @@ public:
         PB.registerModuleAnalyses(*TheMAM);
         PB.registerFunctionAnalyses(*TheFAM);
         PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
-        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues));
+        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues.get()));
     }
 
     explicit Compiler(const bool verbose) : verbose(verbose) {
@@ -141,8 +146,6 @@ public:
         anon_fn.getCode().v->print(errs());
         printf("\n");
 
-        namedValues = codeGenerator->NamedValues;
-
         auto RT = TheJIT->getMainJITDylib().createResourceTracker();
 
         auto TSM = llvm::orc::ThreadSafeModule(std::move(module), std::move(TheContext));
@@ -154,9 +157,7 @@ public:
 
         fprintf(stderr, "Evaluated to %f\n", FP());
 
-        // Delete the anonymous expression module from the JIT.
         ExitOnErr(RT->remove());
-
         return 0;
     }
 };
