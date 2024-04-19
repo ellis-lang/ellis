@@ -64,7 +64,11 @@ public:
         }
         else {
             auto c = Builder.CreateLoad(V->getAllocatedType(), V, ast.getName().c_str());
-            std::cout << "load created\n";
+            if (c->getType()->isPointerTy()) {
+                std::cout << "load created successfully";
+            } else {
+                std::cout << "could not create load";
+            }
             ast.setCode(c);
         }
     }
@@ -128,7 +132,7 @@ public:
 
         // Record the function arguments in the NamedValues map.
         //(*NamedValues).clear();
-        auto tempNamedValues = *NamedValues;
+        //auto tempNamedValues = *NamedValues;
         for (auto &Arg : F->args()) {
             AllocaInst *Alloca = CreateEntryBlockAlloca(F, Arg.getName().str());
 
@@ -136,7 +140,7 @@ public:
             Builder.CreateStore(&Arg, Alloca);
 
             // Add arguments to variable symbol table.
-            tempNamedValues[std::string(Arg.getName())] = Alloca;
+            (*NamedValues)[std::string(Arg.getName())] = Alloca;
         }
 
         for (auto& expr : ast.getBody()) {
