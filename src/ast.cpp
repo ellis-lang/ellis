@@ -17,6 +17,10 @@ void StringExprAST::Accept(Visitor& v) {
     v.Visit(*this);
 }
 
+void PrototypeAST::Accept(Visitor &v) {
+    v.Visit(*this);
+}
+
 void FunctionAST::Accept(Visitor& v) {
     v.Visit(*this);
 }

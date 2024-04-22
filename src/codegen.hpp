@@ -69,7 +69,7 @@ public:
             } else {
                 std::cout << "could not create load";
             }
-            ast.setCode(c);
+            ast.setCode(V);
         }
     }
 
@@ -110,6 +110,22 @@ public:
 
     void Visit(IfAST& ast) override {
 
+    }
+
+    void Visit(PrototypeAST& ast) override {
+        std::vector<Type *> Doubles(ast.getArgs().size(), Type::getDoubleTy(TheContext));
+        FunctionType *FT =
+                FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+
+        Function *F =
+                Function::Create(FT, Function::ExternalLinkage, ast.getName(), TheModule);
+
+        // Set names for all arguments.
+        unsigned Idx = 0;
+        for (auto &Arg : F->args())
+            Arg.setName(ast.getArgs()[Idx++]);
+
+        ast.setCode(F);
     }
 
     void Visit(FunctionAST& ast) override {
@@ -200,7 +216,9 @@ public:
     }
 
     void Visit(ReturnAST& ast) override {
-
+        ast.getRetExpr().Accept(*this);
+        Value* retVal = ast.getCode().v;
+        Builder.CreateRet(retVal);
     }
 };
 

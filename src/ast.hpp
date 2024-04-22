@@ -208,7 +208,7 @@ public:
 class PrototypeAST {
     std::string Name;
     std::vector<std::string> Args;
-
+    Code code;
 public:
     PrototypeAST(std::string Name, std::vector<std::string> Args)
         : Name(std::move(Name)), Args(std::move(Args)) {}
@@ -224,6 +224,7 @@ public:
     void Accept(Visitor& v);
     std::vector<std::string>& getArgs() { return Args; }
     std::string& getName() { return Name; }
+    void setCode(Function* f) { code.f = f; }
 };
 
 /// FunctionAST - This class represents a function definition itself.
@@ -271,6 +272,7 @@ public:
     void Accept(Visitor& v) override;
     void setCode(Value* c) { code.v = c; }
     Code getCode() { return code; }
+    ExprAST& getRetExpr() {return *ret; }
 };
 
 class IfAST : public StatementAST {
@@ -330,6 +332,7 @@ public:
     virtual void Visit(VariableDefAST& ast) = 0;
     virtual void Visit(UnitExprAST& ast) = 0;
     virtual void Visit(ReturnAST& ast) = 0;
+    virtual void Visit(PrototypeAST& ast) = 0;
 };
 
 
