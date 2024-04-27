@@ -9,17 +9,20 @@
 #include <llvm/IR/Value.h>
 #include "abstract_syntax_tree.h"
 
-class ASTVisitor {
+class Visitor {
 public:
-    virtual llvm::Value* codegen(const NumberExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const CharExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const StringExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const VariableExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const VariableDefAST &expr) = 0;
-    virtual llvm::Value* codegen(const BinaryExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const CallExprAST &expr) = 0;
-    virtual llvm::Value* codegen(const IfAST &expr) = 0;
-
+    virtual void operator()(NumberExprAST&) = 0;
+    virtual void operator()(CallExprAST&) = 0;
+    virtual void operator()(CharExprAST&) = 0;
+    virtual void operator()(StringExprAST&) = 0;
+    virtual void operator()(UnitExprAST&) = 0;
+    virtual void operator()(VariableExprAST&) = 0;
+    virtual void operator()(LetExprAST&) = 0;
+    virtual void operator()(BinaryExprAST&) = 0;
+    virtual void operator()(FunctionAST&) = 0;
+    virtual void operator()(PrototypeAST&) = 0;
+    virtual void operator()(ReturnAST&) = 0;
+    virtual void operator()(IfAST&) = 0;
 };
 
 

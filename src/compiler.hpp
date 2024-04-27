@@ -50,7 +50,7 @@ class Compiler {
     std::unique_ptr<ModuleAnalysisManager> TheMAM;
     std::unique_ptr<PassInstrumentationCallbacks> ThePIC;
     std::unique_ptr<StandardInstrumentations> TheSI;
-    std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+    std::unique_ptr<std::map<std::string, std::unique_ptr<PrototypeAST>>> FunctionProtos;
     ExitOnError ExitOnErr;
 public:
     void ReinitializeModuleAndManagers() {
@@ -88,7 +88,8 @@ public:
         for (auto p: *namedValues) {
             std::cout << p.first << "\n";
         }
-        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues.get()));
+        codeGenerator = std::make_unique<CodeGenerator>(
+                CodeGenerator(*TheContext, *builder, *module, namedValues.get(), FunctionProtos.get()));
     }
 
     void InitializeModuleAndManagers() {
@@ -98,7 +99,8 @@ public:
         module->setDataLayout(TheJIT->getDataLayout());
         // Create a new builder for the module.
         builder = std::make_unique<IRBuilder<>>(*TheContext);
-        namedValues = std::make_unique<std::map<std::string, AllocaInst*>>();
+        namedValues = std::make_unique<std::map<std::string, AllocaInst *>>();
+        FunctionProtos = std::make_unique<std::map<std::string, std::unique_ptr<PrototypeAST>>>();
         // Create new pass and analysis managers.
         TheFPM = std::make_unique<FunctionPassManager>();
         TheLAM = std::make_unique<LoopAnalysisManager>();
@@ -123,7 +125,8 @@ public:
         PB.registerModuleAnalyses(*TheMAM);
         PB.registerFunctionAnalyses(*TheFAM);
         PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
-        codeGenerator = std::make_unique<CodeGenerator>(CodeGenerator(*TheContext, *builder, *module, namedValues.get()));
+        codeGenerator = std::make_unique<CodeGenerator>(
+                CodeGenerator(*TheContext, *builder, *module, namedValues.get(), FunctionProtos.get()));
     }
 
     explicit Compiler(const bool verbose) : verbose(verbose) {
@@ -134,9 +137,9 @@ public:
         InitializeModuleAndManagers();
     }
 
-    int compile(const std::vector<std::string>& files);
+    int compile(const std::vector<std::string> &files);
 
-    int jit(std::string& source) {
+    int jit(std::string &source) {
         auto tokens = lex(std::move(source), false);
         auto asts = parse(tokens);
         auto Proto = std::make_unique<PrototypeAST>("__anon_expr",

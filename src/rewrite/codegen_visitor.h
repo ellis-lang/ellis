@@ -11,7 +11,11 @@
 #include <llvm/IR/IRBuilder.h>
 #include "ast_visitor.h"
 
-class CodegenVisitor: public ASTVisitor{
+using namespace llvm;
+
+using Code = std::variant<Value*, Function*>;
+
+class CodegenVisitor: public Visitor {
 
 protected: /* Used by tester */
     std::unique_ptr<llvm::LLVMContext> context;
@@ -21,17 +25,18 @@ protected: /* Used by tester */
 
 public:
     CodegenVisitor();
-    llvm::Value* codegen(const NumberExprAST &expr) override;
-    llvm::Value* codegen(const CharExprAST &expr) override;
-    llvm::Value* codegen(const StringExprAST &expr) override;
-    llvm::Value* codegen(const VariableExprAST &expr) override;
-    llvm::Value* codegen(const VariableDefAST &expr) override;
-    llvm::Value* codegen(const BinaryExprAST &expr) override;
-    llvm::Value* codegen(const CallExprAST &expr) override;
-    llvm::Value* codegen(const Function &expr) override;
-    llvm::Value* codegen(const IfAST &expr) override;
-
-    void dumpLLVMIR();
+    void operator()(NumberExprAST&);
+    void operator()(CallExprAST&);
+    void operator()(CharExprAST&);
+    void operator()(StringExprAST&);
+    void operator()(UnitExprAST&);
+    void operator()(VariableExprAST&);
+    void operator()(LetExprAST&);
+    void operator()(BinaryExprAST&);
+    void operator()(FunctionAST&);
+    void operator()(PrototypeAST&);
+    void operator()(ReturnAST&);
+    void operator()(IfAST&);
 };
 
 class CodegenException : public std::exception {
