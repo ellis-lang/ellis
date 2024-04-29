@@ -1,5 +1,7 @@
 project(EllisLib)
 
+set(CMAKE_CXX_STANDARD 17)
+
 find_package(LLVM REQUIRED CONFIG)
 
 
@@ -26,6 +28,8 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         codegen.hpp
         repl.hpp
         ellis_jit.hpp
+        rewrite/print_visitor.cpp
+        rewrite/print_visitor.hpp
         #ast_visitor.h
         #codegen_visitor.cpp
         #codegen_visitor.h
