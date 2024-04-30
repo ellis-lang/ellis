@@ -2,8 +2,8 @@
 // Created by jonathan on 4/27/24.
 //
 
-#ifndef ELLIS_PRINT_VISITOR_HPP
-#define ELLIS_PRINT_VISITOR_HPP
+#ifndef ELLIS_PRINT_HPP
+#define ELLIS_PRINT_HPP
 
 #include <iostream>
 #include <type_traits>
@@ -80,4 +80,4 @@ void print(const AST& expr, std::ostream& stream) {
     stream << "\n";
 }
 
-#endif //ELLIS_PRINT_VISITOR_HPP
+#endif //ELLIS_PRINT_HPP

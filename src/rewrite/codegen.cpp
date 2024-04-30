@@ -2,7 +2,7 @@
 // Created by jon on 4/13/24.
 //
 
-#include "codegen_visitor.h"
+#include "codegen.h"
 
 #include <memory>
 #include "llvm/IR/Function.h"
@@ -25,9 +25,6 @@ CodegenVisitor::CodegenVisitor() {
     module = std::make_unique<llvm::Module>("Module", *context);
 }
 
-void CodegenVisitor::operator()(NumberExprAST &) {
-
-}
 
 
 

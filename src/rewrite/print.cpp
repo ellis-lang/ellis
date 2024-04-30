@@ -3,7 +3,7 @@
 //
 
 #include "abstract_syntax_tree.h"
-#include "print_visitor.hpp"
+#include "print.hpp"
 
 void PrintVisitor::operator()(NumberExprAST &ast) {
     stream << "Number(" << ast.val << ")";
