@@ -28,8 +28,8 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         codegen.hpp
         repl.hpp
         ellis_jit.hpp
-        rewrite/print_visitor.cpp
-        rewrite/print_visitor.hpp
+        rewrite/print.cpp
+        rewrite/print.hpp
         #ast_visitor.h
         #codegen_visitor.cpp
         #codegen_visitor.h

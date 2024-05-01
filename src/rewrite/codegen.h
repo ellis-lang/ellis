@@ -15,7 +15,7 @@ using namespace llvm;
 
 using Code = std::variant<Value*, Function*>;
 
-class CodegenVisitor {
+class CodeGenerator {
     Code codegen_variable_ast(const VariableExprAST& ast);
     Code codegen_function_ast(const FunctionAST& ast);
     Code codegen_number_ast(const NumberExprAST& ast);
@@ -28,15 +28,24 @@ class CodegenVisitor {
     Code codegen_return_ast(const ReturnAST& ast);
     Code codegen_unit_ast(const UnitExprAST& ast);
     Code codegen_prototype_ast(const PrototypeAST& ast);
+
+    AllocaInst *CreateEntryBlockAlloca(Function *TheFunction,
+                                       const std::string &VarName) {
+        IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
+                         TheFunction->getEntryBlock().begin());
+        return TmpB.CreateAlloca(Type::getDoubleTy(*context), nullptr,
+                                 VarName);
+    }
     
 protected: /* Used by tester */
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::IRBuilder<>> builder;
     std::unique_ptr<llvm::Module> module;
-    std::map<std::string, llvm::AllocaInst *> varEnv;
+    std::map<std::string, AllocaInst *> variables;
+    std::map<std::string, Function*> functions;
 
 public:
-    CodegenVisitor();
+    CodeGenerator();
 
     Code codegen(const AST& ast) {
         return std::visit(overloaded{
