@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <type_traits>
-#include "abstract_syntax_tree.h"
+#include "ast.hpp"
 
 void print(const AST& expr, std::ostream& stream) {
 

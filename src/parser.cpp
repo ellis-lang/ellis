@@ -4,13 +4,18 @@
 
 #include "parser.hpp"
 #include "lex.hpp"
+#include "print.hpp"
 #include <iostream>
 #include <cmath>
 
-std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens);
-std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, Token terminator);
-std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens);
-std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS, Token terminator);
+std::unique_ptr<AST> parse_paren_expr(std::vector<TokenPair> &tokens);
+
+std::unique_ptr<AST> parse_primary(std::vector<TokenPair> &tokens, Token terminator);
+
+std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair> &tokens);
+
+std::unique_ptr<AST>
+parse_bin_op_rhs(std::vector<TokenPair> &tokens, int ExprPrec, std::unique_ptr<AST> LHS, Token terminator);
 
 
 const std::map<std::string, int> BinopPrecedence = {
@@ -24,7 +29,10 @@ const std::map<std::string, int> BinopPrecedence = {
 };
 
 
-std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
+std::unique_ptr<AST> make(AST ast) { return make(std::move(ast)); }
+
+
+std::unique_ptr<AST> parse_expression(std::vector<TokenPair> &tokens, const Token terminator = tok_semicolon) {
     auto lhs = parse_primary(tokens, terminator);
     if (tokens[0].first == terminator) {
         tokens.erase(tokens.begin());
@@ -37,7 +45,7 @@ std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const 
     }
 
     if (tokens[0].first != terminator) {
-        throw ParsingException("Expected terminator at the end of expression, got: " + tokens[0].second );
+        throw ParsingException("Expected terminator at the end of expression, got: " + tokens[0].second);
     }
     tokens.erase(tokens.begin());
 
@@ -47,27 +55,27 @@ std::unique_ptr<ExprAST> parse_expression(std::vector<TokenPair>& tokens, const 
     return lhs;
 }
 
-std::unique_ptr<ExprAST> parse_argument(std::vector<TokenPair>& tokens) {
+std::unique_ptr<AST> parse_argument(std::vector<TokenPair> &tokens) {
     switch (tokens[0].first) {
         case tok_number: {
             const auto num = tokens[0].second;
             tokens.erase(tokens.begin());
-            return std::make_unique<NumberExprAST>(NumberExprAST(std::stod(num)));
+            return make(NumberExprAST(std::stod(num)));
         }
         case tok_identifier: {
             const auto name = tokens[0].second;
             tokens.erase(tokens.begin());
-            return std::make_unique<VariableExprAST>(VariableExprAST(name));
+            return make(VariableExprAST(name));
         }
         case tok_string_literal: {
             const auto str = tokens[0].second;
             tokens.erase(tokens.begin());
-            return std::make_unique<StringExprAST>(StringExprAST(str));
+            return make(StringExprAST(str));
         }
         case tok_char_literal: {
             const auto ch = tokens[0].second[0];
             tokens.erase(tokens.begin());
-            return std::make_unique<CharExprAST>(CharExprAST(ch));
+            return make(CharExprAST(ch));
         }
         case tok_lparen:
             return parse_paren_expr(tokens);
@@ -76,7 +84,7 @@ std::unique_ptr<ExprAST> parse_argument(std::vector<TokenPair>& tokens) {
     }
 }
 
-std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
+std::unique_ptr<AST> parse_identifier_expr(std::vector<TokenPair> &tokens, const Token terminator = tok_semicolon) {
     auto name = tokens[0].second;
     tokens.erase(tokens.begin()); // remove 'name'
 
@@ -92,50 +100,50 @@ std::unique_ptr<ExprAST> parse_identifier_expr(std::vector<TokenPair>& tokens, c
         case tok_string_literal:
         case tok_number:
         case tok_lparen: {
-            std::vector<std::unique_ptr<ExprAST>> arguments;
+            std::vector<std::unique_ptr<AST>> arguments;
             while (tokens[0].first != terminator) {
                 arguments.push_back(std::move(parse_argument(tokens)));
             }
 
             auto ast = CallExprAST(name, std::move(arguments));
-            return std::make_unique<CallExprAST>(std::move(ast));
+            return make(std::move(ast));
         }
         case tok_operator: {
-            auto lhs = std::make_unique<VariableExprAST>(name);
+            auto lhs = make(VariableExprAST(name));
             auto rhs = parse_bin_op_rhs(tokens, 0, std::move(lhs), terminator);
             return std::move(rhs);
         }
         default:
             if (tokens[0].first == terminator) {
-                return std::make_unique<VariableExprAST>(VariableExprAST(name));
+                return make(VariableExprAST(name));
             }
             throw ParsingException("Expected " + TOKEN_STRINGS.at(terminator) + ", found: " + tokens[0].second);
     }
 }
 
-std::unique_ptr<ExprAST> parse_number_expr(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
-    auto ast = std::make_unique<NumberExprAST>(NumberExprAST(std::stod(tokens[0].second)));
+std::unique_ptr<AST> parse_number_expr(std::vector<TokenPair> &tokens, const Token terminator = tok_semicolon) {
+    auto ast = make(NumberExprAST(std::stod(tokens[0].second)));
     tokens.erase(tokens.begin());
     return std::move(ast);
 }
 
-std::unique_ptr<ExprAST> parse_string_expr(std::vector<TokenPair>& tokens) {
-    auto ast = std::make_unique<StringExprAST>(StringExprAST(tokens[0].second));
+std::unique_ptr<AST> parse_string_expr(std::vector<TokenPair> &tokens) {
+    auto ast = make(StringExprAST(tokens[0].second));
     tokens.erase(tokens.begin());
     return std::move(ast);
 }
 
-std::unique_ptr<ExprAST> parse_char_expr(std::vector<TokenPair>& tokens) {
-    auto ast = std::make_unique<CharExprAST>(CharExprAST(tokens[0].second[0]));
+std::unique_ptr<AST> parse_char_expr(std::vector<TokenPair> &tokens) {
+    auto ast = make(CharExprAST(tokens[0].second[0]));
     tokens.erase(tokens.begin());
     return std::move(ast);
 }
 
-std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens) {
+std::unique_ptr<AST> parse_paren_expr(std::vector<TokenPair> &tokens) {
     tokens.erase(tokens.begin()); // remove '('
     if (tokens[0].first == tok_rparen) {
         tokens.erase(tokens.begin()); // remove ')'
-        return std::make_unique<UnitExprAST>(UnitExprAST());
+        return make(UnitExprAST());
     }
     auto expr = parse_expression(tokens, tok_rparen);
     if (!expr) {
@@ -145,7 +153,7 @@ std::unique_ptr<ExprAST> parse_paren_expr(std::vector<TokenPair>& tokens) {
     return expr;
 }
 
-std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, const Token terminator=tok_semicolon) {
+std::unique_ptr<AST> parse_primary(std::vector<TokenPair> &tokens, const Token terminator = tok_semicolon) {
     switch (tokens[0].first) {
         case tok_identifier:
             return parse_identifier_expr(tokens, terminator);
@@ -162,15 +170,15 @@ std::unique_ptr<ExprAST> parse_primary(std::vector<TokenPair>& tokens, const Tok
     }
 }
 
-int get_tok_precedence(const TokenPair& t) {
+int get_tok_precedence(const TokenPair &t) {
     // Make sure it's a declared binop.
     int TokPrec = BinopPrecedence.at(t.second);
     if (TokPrec <= 0) return -1;
     return TokPrec;
 }
 
-std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int ExprPrec, std::unique_ptr<ExprAST> LHS,
-                                          const Token terminator) {
+std::unique_ptr<AST> parse_bin_op_rhs(std::vector<TokenPair> &tokens, int ExprPrec, std::unique_ptr<AST> LHS,
+                                      const Token terminator) {
     // If this is a binop, find its precedence.
     while (true) {
         if (tokens[0].first == terminator)
@@ -195,7 +203,7 @@ std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int Ex
             return nullptr;
 
         if (tokens[0].first == terminator)
-            return std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
+            return make(BinaryExprAST(BinOp, std::move(LHS), std::move(RHS)));
 
         // If BinOp binds less tightly with RHS than the operator after RHS, let
         // the pending operator take RHS as its LHS.
@@ -207,11 +215,11 @@ std::unique_ptr<ExprAST> parse_bin_op_rhs(std::vector<TokenPair>& tokens, int Ex
         }
 
         // Merge LHS/RHS.
-        LHS = std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
+        LHS = make(BinaryExprAST(BinOp, std::move(LHS), std::move(RHS)));
     }
 }
 
-std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
+std::unique_ptr<AST> parse_let(std::vector<TokenPair> &tokens) {
 
     // remove LET
     tokens.erase(tokens.begin());
@@ -234,7 +242,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             }
             tokens.erase(tokens.begin()); // remove '='
             auto expr = parse_expression(tokens);
-            return std::make_unique<VariableDefAST>(ident, std::move(expr));
+            return make(LetExprAST(ident, std::move(expr)));
         }
         case tok_identifier: {
             auto arg_names = std::vector<std::string>();
@@ -248,7 +256,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
             if (tokens[0].second == "=") {
                 auto ast = PrototypeAST(ident, arg_names);
                 tokens.erase(tokens.begin());
-                auto func =  std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
+                auto func = make(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
                 tokens.erase(tokens.begin()); // remove 'end'
                 return std::move(func);
             }
@@ -265,7 +273,7 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
                 throw ParsingException("Expected '=' before function body");
 
             tokens.erase(tokens.begin());
-            auto func = std::make_unique<FunctionAST>(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
+            auto func = make(FunctionAST(std::make_unique<PrototypeAST>(ast), parse_body(tokens)));
             tokens.erase(tokens.begin());
             return std::move(func);
         }
@@ -274,40 +282,40 @@ std::unique_ptr<StatementAST> parse_let(std::vector<TokenPair>& tokens) {
     }
 }
 
-std::unique_ptr<IfAST> parse_if(std::vector<TokenPair>& tokens) {
+std::unique_ptr<AST> parse_if(std::vector<TokenPair> &tokens) {
     tokens.erase(tokens.begin()); // remove 'if'
     auto conditional = parse_expression(tokens, tok_then);
     auto body_true = parse_body(tokens);
     if (tokens[0].first == tok_end) {
         tokens.erase(tokens.begin());
-        return std::make_unique<IfAST>(IfAST(std::move(conditional), std::move(body_true), {}));
+        return make(IfAST(std::move(conditional), std::move(body_true), {}));
     }
 
     if (tokens[0].first == tok_else) {
         tokens.erase(tokens.begin());
         auto body_false = parse_body(tokens);
         tokens.erase(tokens.begin());
-        return std::make_unique<IfAST>(IfAST(std::move(conditional), std::move(body_true), std::move(body_false)));
+        return make(IfAST(std::move(conditional), std::move(body_true), std::move(body_false)));
     }
 
     throw ParsingException("Unexpected token while parsing if statement: " + tokens[0].second);
 }
 
-std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
+std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair> &tokens) {
     std::vector<std::unique_ptr<AST>> ast;
     while (tokens[0].first != tok_end && tokens[0].first != tok_else) {
         auto current_token = tokens[0];
         switch (current_token.first) {
             case tok_let:
                 ast.push_back(parse_let(tokens));
-            break;
+                break;
             case tok_return:
                 tokens.erase(tokens.begin()); // remove 'return'
                 if (tokens.size() > 1) {
                     if (tokens[0].first == tok_semicolon)
-                        ast.push_back(std::make_unique<ReturnAST>(ReturnAST()));
+                        ast.push_back(make(ReturnAST()));
                     else
-                        ast.push_back(std::make_unique<ReturnAST>(ReturnAST(parse_expression(tokens))));
+                        ast.push_back(make(ReturnAST(parse_expression(tokens))));
                 } else {
                     throw ParsingException("Unexpected end of function definition");
                 }
@@ -319,9 +327,9 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
                         auto name = current_token.second;
                         tokens.erase(tokens.begin(), tokens.begin() + 2);
 
-                        auto node = std::make_unique<BinaryExprAST>("=",
-                            std::make_unique<VariableExprAST>(VariableExprAST(name)),
-                            parse_expression(tokens));
+                        auto node = make(BinaryExprAST("=",
+                                                       make(VariableExprAST(name)),
+                                                       parse_expression(tokens)));
                         ast.push_back(std::move(node));
                     } else {
                         ast.push_back(parse_expression(tokens));
@@ -333,7 +341,7 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
             case tok_string_literal:
             case tok_lparen:
                 ast.push_back(parse_expression(tokens));
-            break;
+                break;
             case tok_if:
                 ast.push_back(parse_if(tokens));
                 break;
@@ -348,7 +356,7 @@ std::vector<std::unique_ptr<AST>> parse_body(std::vector<TokenPair>& tokens) {
 }
 
 
-std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
+std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair> &tokens) {
     std::vector<std::unique_ptr<AST>> ast;
     while (!tokens.empty()) {
         auto current_token = tokens[0];
@@ -364,9 +372,10 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
                         auto name = current_token.second;
                         tokens.erase(tokens.begin(), tokens.begin() + 2);
 
-                        auto node = std::make_unique<BinaryExprAST>("=",
-                            std::make_unique<VariableExprAST>(VariableExprAST(name)),
-                            parse_expression(tokens));
+                        auto node = make(
+                                BinaryExprAST("=",
+                                              make(VariableExprAST(name)),
+                                              parse_expression(tokens)));
                         ast.push_back(std::move(node));
                     } else {
                         ast.push_back(parse_expression(tokens));
@@ -388,7 +397,7 @@ std::vector<std::unique_ptr<AST>> parse(std::vector<TokenPair>& tokens) {
             default:
                 throw ParsingException("Unexpected token: " + current_token.second);
         }
-        std::cout << *ast.back() << "\n";
+        print(*ast.back(), std::cout);
     }
     return ast;
 }

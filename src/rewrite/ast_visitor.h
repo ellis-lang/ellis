@@ -7,7 +7,7 @@
 
 
 #include <llvm/IR/Value.h>
-#include "abstract_syntax_tree.h"
+#include "ast.hpp"
 
 class Visitor {
 public:

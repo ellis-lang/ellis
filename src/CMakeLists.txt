@@ -20,8 +20,6 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         lex.cpp
         lex.hpp
         source_handler.hpp
-        ast.cpp
-        ast.hpp
         parser.cpp
         parser.hpp
         codegen.cpp
@@ -30,11 +28,10 @@ add_library(ellis STATIC compiler.hpp compiler.cpp
         ellis_jit.hpp
         rewrite/print.cpp
         rewrite/print.hpp
-        #ast_visitor.h
-        #codegen_visitor.cpp
-        #codegen_visitor.h
-        #abstract_syntax_tree.cpp
-        #abstract_syntax_tree.h
+        ast.cpp
+        ast.hpp
+        print.cpp
+        print.hpp
 )
 
 llvm_map_components_to_libnames(llvm_libs support core irreader orcjit target support passes native)

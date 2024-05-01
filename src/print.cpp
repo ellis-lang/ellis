@@ -2,7 +2,7 @@
 // Created by jonathan on 4/27/24.
 //
 
-#include "abstract_syntax_tree.h"
+#include "ast.hpp"
 #include "print.hpp"
 
 void PrintVisitor::operator()(NumberExprAST &ast) {
